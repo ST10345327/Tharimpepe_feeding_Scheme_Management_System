@@ -28,8 +28,30 @@
     }
     .view { min-height: 100vh; display: none; flex-direction: column; }
     .view.active { display: flex; }
-    #login-view { background: #f8f9fc; align-items: center; padding: 20px; }
-    .login-center { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
+    #login-view { background: #f8f9fc; align-items: stretch; flex-direction: row; padding: 0; }
+    .login-center { flex: 0 0 42%; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 42%; padding: 24px; overflow-y: auto; }
+    .login-content { width: 100%; max-width: 420px; margin: auto; }
+    .login-carousel { position: relative; flex: 1 1 58%; min-width: 0; min-height: 100vh; overflow: hidden; color: white; background: var(--primary-blue); }
+    .login-slide { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity 700ms ease; }
+    .login-slide.is-active { opacity: 1; visibility: visible; z-index: 1; }
+    .login-slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .login-carousel::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(9,25,31,.3), transparent 36%, rgba(9,25,31,.64)); }
+    .login-carousel-brand, .login-carousel-caption, .login-carousel-controls { position: absolute; z-index: 3; }
+    .login-carousel-brand { top: 28px; left: 30px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .login-carousel-brand img { width: 54px; height: 42px; padding: 4px; object-fit: contain; border-radius: 9px; background: rgba(255,255,255,.92); }
+    .login-carousel-brand strong, .login-carousel-brand span { display: block; }
+    .login-carousel-brand span { margin-top: 2px; font-size: 12px; color: rgba(255,255,255,.84); }
+    .login-carousel-caption { left: 30px; bottom: 74px; max-width: min(75%, 520px); }
+    .login-carousel-caption h1 { font-size: clamp(22px, 2.5vw, 34px); line-height: 1.15; margin-bottom: 8px; }
+    .login-carousel-caption p { font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.9); }
+    .login-carousel-controls { left: 30px; bottom: 25px; display: flex; align-items: center; gap: 9px; }
+    .login-carousel-arrow, .login-carousel-dot { display: inline-flex; align-items: center; justify-content: center; color: white; cursor: pointer; border: 1px solid rgba(255,255,255,.58); background: rgba(255,255,255,.22); }
+    .login-carousel-arrow { width: 34px; height: 34px; border-radius: 50%; font-size: 20px; }
+    .login-carousel-dots { display: flex; align-items: center; gap: 7px; margin: 0 3px; }
+    .login-carousel-dot { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 10px; opacity: .72; transition: width 180ms ease, opacity 180ms ease; }
+    .login-carousel-dot[aria-current="true"] { width: 27px; opacity: 1; background: white; }
+    .login-carousel-arrow:focus-visible, .login-carousel-dot:focus-visible { outline: 3px solid rgba(255,255,255,.75); outline-offset: 3px; }
+    @media (prefers-reduced-motion: reduce) { .login-slide, .login-carousel-dot { transition: none; } }
     .login-logo { margin-bottom: 24px; text-align: center; }
     .login-logo img { width: 96px; height: 96px; border-radius: 20px; object-fit: cover; }
     .login-brand { text-align: center; margin-bottom: 32px; }
@@ -45,7 +67,18 @@
     .register-link { text-align: center; margin-top: 12px; font-size: 14px; }
     .register-link a { color: var(--primary-blue); font-weight: 600; cursor: pointer; text-decoration: none; }
     .register-link a:hover { text-decoration: underline; }
-    .footer-copy { text-align: center; font-size: 11px; color: #98a2b3; line-height: 1.5; padding: 20px 40px; flex-shrink: 0; }
+    .footer-copy { text-align: center; font-size: 11px; color: #98a2b3; line-height: 1.5; padding: 20px 12px 0; flex-shrink: 0; }
+    @media (max-width: 760px) {
+      #login-view { flex-direction: column; }
+      .login-carousel { flex: 0 0 clamp(220px, 34vh, 320px); width: 100%; min-height: 0; }
+      .login-center { flex: 1 0 auto; width: 100%; padding: 18px 20px 24px; overflow: visible; }
+      .login-content { max-width: 420px; }
+      .login-carousel-brand { top: 18px; left: 20px; }
+      .login-carousel-caption { left: 20px; bottom: 64px; max-width: 82%; }
+      .login-carousel-caption h1 { font-size: 23px; }
+      .login-carousel-caption p { font-size: 13px; }
+      .login-carousel-controls { left: 20px; bottom: 17px; }
+    }
     .drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; backdrop-filter: blur(2px); }
     .drawer { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: var(--white); z-index: 2001; transition: 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
     .drawer.active { left: 0; }
@@ -166,7 +199,30 @@
 </div>
 
 <div class="view active" id="login-view">
+  <section class="login-carousel" aria-label="Tharimpepe community stories" data-login-carousel>
+    <div class="login-slide is-active" data-slide aria-hidden="false"><img src="img/login-carousel/community.svg" alt="Illustration of community members sharing a meal"></div>
+    <div class="login-slide" data-slide aria-hidden="true"><img src="img/login-carousel/meals.svg" alt="Illustration of a nutritious meal prepared for the community" loading="lazy"></div>
+    <div class="login-slide" data-slide aria-hidden="true"><img src="img/login-carousel/together.svg" alt="Illustration of volunteers preparing food together" loading="lazy"></div>
+    <div class="login-carousel-brand" aria-hidden="true">
+      <img src="img/icon.png" alt="">
+      <div><strong>Tharimpepe</strong><span>Feeding Scheme</span></div>
+    </div>
+    <div class="login-carousel-caption" aria-live="polite" aria-atomic="true">
+      <h1 data-slide-title>Our community, growing together</h1>
+      <p data-slide-copy>Working together to make every meal count.</p>
+    </div>
+    <div class="login-carousel-controls">
+      <button class="login-carousel-arrow" type="button" data-carousel-prev aria-label="Previous image">&#8249;</button>
+      <div class="login-carousel-dots" role="group" aria-label="Choose a community story">
+        <button class="login-carousel-dot" type="button" aria-label="Show community story 1" aria-current="true" data-carousel-dot="0"></button>
+        <button class="login-carousel-dot" type="button" aria-label="Show community story 2" aria-current="false" data-carousel-dot="1"></button>
+        <button class="login-carousel-dot" type="button" aria-label="Show community story 3" aria-current="false" data-carousel-dot="2"></button>
+      </div>
+      <button class="login-carousel-arrow" type="button" data-carousel-next aria-label="Next image">&#8250;</button>
+    </div>
+  </section>
   <div class="login-center">
+    <div class="login-content">
     <div class="login-logo">
       <img src="img/icon.png" alt="Tharimpepe FSMS">
     </div>
@@ -197,8 +253,9 @@
       <div class="register-link">Don't have an account? <a onclick="openRegisterModal()">Create one</a></div>
       <a class="btn-sm primary" style="display:block;text-align:center;margin-top:14px;text-decoration:none;" onclick="openQuickDonate()">Quick Donate as Guest</a>
     </div>
+    <div class="footer-copy">&copy; 2026 Tharimpepe Feeding Scheme. All rights reserved.</div>
+    </div>
   </div>
-  <div class="footer-copy">&copy; 2026 Tharimpepe Feeding Scheme. All rights reserved.</div>
 </div>
 
 <div class="modal-overlay" id="register-overlay" onclick="closeRegisterModal()">
@@ -552,6 +609,67 @@ const lanHost = '192.168.18.73:8080';
 const isProbablyEmulator = origin.includes('10.0.2.2') || /emulator|sdk_gphone/i.test(userAgent);
 const host = isProbablyEmulator ? emulatorHost : lanHost;
 return `http://${host}/api`;
+})();
+(() => {
+  const carousel = document.querySelector('[data-login-carousel]');
+  if (!carousel) return;
+
+  const slides = Array.from(carousel.querySelectorAll('[data-slide]'));
+  const dots = Array.from(carousel.querySelectorAll('[data-carousel-dot]'));
+  const title = carousel.querySelector('[data-slide-title]');
+  const copy = carousel.querySelector('[data-slide-copy]');
+  const captions = [
+    ['Our community, growing together', 'Working together to make every meal count.'],
+    ['Nourishment for brighter days', 'Fresh ingredients help us serve balanced meals.'],
+    ['Many hands, one caring community', 'Volunteers make the feeding scheme possible.']
+  ];
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let current = 0;
+  let timer = null;
+  let touchStartX = null;
+
+  function showSlide(index) {
+    current = (index + slides.length) % slides.length;
+    slides.forEach((slide, i) => {
+      const active = i === current;
+      slide.classList.toggle('is-active', active);
+      slide.setAttribute('aria-hidden', String(!active));
+    });
+    dots.forEach((dot, i) => dot.setAttribute('aria-current', String(i === current)));
+    title.textContent = captions[current][0];
+    copy.textContent = captions[current][1];
+  }
+
+  function stop() {
+    if (timer) window.clearInterval(timer);
+    timer = null;
+  }
+
+  function start() {
+    stop();
+    if (!reducedMotion.matches && !document.hidden && slides.length > 1) {
+      timer = window.setInterval(() => showSlide(current + 1), 6000);
+    }
+  }
+
+  carousel.querySelector('[data-carousel-prev]').addEventListener('click', () => { showSlide(current - 1); start(); });
+  carousel.querySelector('[data-carousel-next]').addEventListener('click', () => { showSlide(current + 1); start(); });
+  dots.forEach((dot) => dot.addEventListener('click', () => { showSlide(Number(dot.dataset.carouselDot)); start(); }));
+  carousel.addEventListener('mouseenter', stop);
+  carousel.addEventListener('mouseleave', start);
+  carousel.addEventListener('focusin', stop);
+  carousel.addEventListener('focusout', (event) => { if (!carousel.contains(event.relatedTarget)) start(); });
+  carousel.addEventListener('touchstart', (event) => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
+  carousel.addEventListener('touchend', (event) => {
+    if (touchStartX === null) return;
+    const delta = event.changedTouches[0].clientX - touchStartX;
+    touchStartX = null;
+    if (Math.abs(delta) > 45) { showSlide(current + (delta < 0 ? 1 : -1)); start(); }
+  }, { passive: true });
+  document.addEventListener('visibilitychange', start);
+  if (reducedMotion.addEventListener) reducedMotion.addEventListener('change', start);
+  showSlide(0);
+  start();
 })();
 let AUTH_TOKEN = localStorage.getItem('fsms_token') || '';
 let CURRENT_USER = null;
