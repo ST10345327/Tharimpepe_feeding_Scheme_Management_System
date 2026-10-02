@@ -16,7 +16,7 @@ jobs:
   - job: PhpValidation
     displayName: PHP lint and tests
     pool:
-      vmImage: ubuntu-latest
+      vmImage: ubuntu-24.04
     steps:
       - checkout: self
 
@@ -40,7 +40,7 @@ jobs:
   - job: AndroidDebugBuild
     displayName: Build Android debug APK
     pool:
-      vmImage: ubuntu-latest
+      vmImage: ubuntu-24.04
     steps:
       - checkout: self
 

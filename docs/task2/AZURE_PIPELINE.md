@@ -15,15 +15,15 @@ GitHub remains the source repository. Azure Boards holds planning and work-item 
 
 | Job | Environment | Checks |
 |---|---|---|
-| `PhpValidation` | Microsoft-hosted `ubuntu-latest`, preinstalled PHP 8 and `pdo_sqlite` | `git ls-files -z -- '*.php' \| xargs -0 -r -n 1 php -l`; `php tests/run_all_tests.php` with `FSMS_TEST_SQLITE=1` |
-| `AndroidDebugBuild` | Microsoft-hosted `ubuntu-latest`, Java and Android SDK | `cd android && ./gradlew assembleDebug`; verifies and publishes `android/app/build/outputs/apk/debug/app-debug.apk` |
+| `PhpValidation` | Microsoft-hosted `ubuntu-24.04`, preinstalled PHP 8 and `pdo_sqlite` | `git ls-files -z -- '*.php' \| xargs -0 -r -n 1 php -l`; `php tests/run_all_tests.php` with `FSMS_TEST_SQLITE=1` |
+| `AndroidDebugBuild` | Microsoft-hosted `ubuntu-24.04`, Node.js 20, Java and Android SDK | `npm ci`, then `cd android && ./gradlew assembleDebug`; verifies and publishes `android/app/build/outputs/apk/debug/app-debug.apk` |
 
 The PHP suite runs against in-memory SQLite so it does not require MySQL or alter a shared database. The runner exits nonzero if an assertion or test errors. The Android job compiles the checked-in Capacitor Android project; it does not launch an emulator or perform device UI tests.
 
 ## Dependency and scope decisions
 
 - There is no `composer.json`, so Composer installation is not applicable.
-- `package.json` has no frontend build or test script. Its `package-lock.json` is ignored and not tracked, so the pipeline does not run a non-reproducible npm install.
+- `package.json` has no frontend build or test script. The Android build still requires `@capacitor/android`; the pipeline installs the pinned npm dependency tree with `npm ci` from the tracked `package-lock.json` before Gradle resolves the local Capacitor Android project.
 - PHP hosted-agent dependencies are checked before lint/tests. Gradle uses the checked-in wrapper to select Gradle 8.7 and resolves Android dependencies during the build.
 - No MySQL service, deployment target, Azure service connection, signing key, or production credential is needed for these CI checks.
 - The pipeline builds the Android package but does not synchronize Capacitor assets. When web assets change, run `npx cap sync android` and include the resulting Android asset changes in the same PR.
