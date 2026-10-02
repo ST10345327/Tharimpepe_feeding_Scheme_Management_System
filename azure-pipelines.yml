@@ -52,6 +52,9 @@ jobs:
       - bash: npm ci
         displayName: Install npm dependencies
 
+      - bash: npx cap sync android
+        displayName: Sync Capacitor Android project
+
       - bash: |
           set -euo pipefail
           java -version
