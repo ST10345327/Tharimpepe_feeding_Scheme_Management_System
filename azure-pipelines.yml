@@ -44,6 +44,14 @@ jobs:
     steps:
       - checkout: self
 
+      - task: NodeTool@0
+        displayName: Use Node.js 20
+        inputs:
+          versionSpec: '20.x'
+
+      - bash: npm ci
+        displayName: Install npm dependencies
+
       - bash: |
           set -euo pipefail
           java -version
