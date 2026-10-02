@@ -1,9 +1,11 @@
 include ':app'
+include ':capacitor-android'
 include ':capacitor-cordova-android-plugins'
 project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
 
-apply from: 'capacitor.settings.gradle'
-
-// Resolve from this settings file so the Capacitor module path does not depend
-// on the shell's working directory in CI.
-project(':capacitor-android').projectDir = new File(settingsDir, '../node_modules/@capacitor/android/capacitor')
+def capacitorAndroidDir = new File(settingsDir, '../node_modules/@capacitor/android/capacitor').canonicalFile
+def capacitorAndroidBuildFile = new File(capacitorAndroidDir, 'build.gradle')
+if (!capacitorAndroidBuildFile.isFile()) {
+    throw new GradleException("Capacitor Android Gradle build file not found: ${capacitorAndroidBuildFile}")
+}
+project(':capacitor-android').projectDir = capacitorAndroidDir
