@@ -36,12 +36,13 @@
             inset: 0;
             opacity: 0;
             position: absolute;
-            transition: opacity 700ms ease;
+            transition: opacity 700ms ease, visibility 0s linear 700ms;
             visibility: hidden;
         }
 
         .login-slide.is-active {
             opacity: 1;
+            transition-delay: 0s;
             visibility: visible;
             z-index: 1;
         }
@@ -62,8 +63,7 @@
         }
 
         .login-mission-brand,
-        .login-mission-caption,
-        .login-carousel-controls {
+        .login-mission-caption {
             position: absolute;
             z-index: 3;
         }
@@ -105,52 +105,8 @@
 
         .login-mission-caption p { color: rgba(255,255,255,.9); font-size: 15px; line-height: 1.5; margin: 0; }
 
-        .login-carousel-controls {
-            align-items: center;
-            bottom: 32px;
-            display: flex;
-            gap: 10px;
-            left: 36px;
-        }
-
-        .login-carousel-arrow,
-        .login-carousel-dot {
-            align-items: center;
-            background: rgba(255,255,255,.24);
-            border: 1px solid rgba(255,255,255,.58);
-            color: #fff;
-            cursor: pointer;
-            display: inline-flex;
-            justify-content: center;
-        }
-
-        .login-carousel-arrow {
-            border-radius: 50%;
-            font-size: 20px;
-            height: 36px;
-            line-height: 1;
-            width: 36px;
-        }
-
-        .login-carousel-dots { align-items: center; display: flex; gap: 8px; margin: 0 4px; }
-
-        .login-carousel-dot {
-            border: 0;
-            border-radius: 99px;
-            height: 9px;
-            opacity: .72;
-            padding: 0;
-            transition: width 180ms ease, opacity 180ms ease;
-            width: 9px;
-        }
-
-        .login-carousel-dot[aria-current="true"] { background: #fff; opacity: 1; width: 28px; }
-        .login-carousel-arrow:hover,
-        .login-carousel-arrow:focus-visible,
-        .login-carousel-dot:focus-visible { outline: 3px solid rgba(255,255,255,.7); outline-offset: 3px; }
-
         @media (prefers-reduced-motion: reduce) {
-            .login-slide, .login-carousel-dot { transition: none; }
+            .login-slide { transition: none; }
         }
 
         .login-panel {
@@ -312,7 +268,6 @@
             }
 
             .login-mission-brand { left: 24px; top: 22px; }
-            .login-carousel-controls { bottom: 22px; left: 24px; }
 
             .login-panel {
                 min-height: 560px;
@@ -326,8 +281,6 @@
             .login-mission-caption p { font-size: 13px; }
             .login-mission-brand img { height: 38px; width: 50px; }
             .login-mission-brand { font-size: 13px; }
-            .login-carousel-controls { bottom: 17px; }
-            .login-carousel-arrow { height: 32px; width: 32px; }
             .login-card {
                 padding: 30px 20px;
             }
@@ -353,15 +306,6 @@
             <div class="login-mission-caption" aria-live="polite" aria-atomic="true">
                 <h1 data-slide-title>Our community, growing together</h1>
                 <p data-slide-copy>Working together to make every meal count.</p>
-            </div>
-            <div class="login-carousel-controls">
-                <button class="login-carousel-arrow" type="button" data-carousel-prev aria-label="Previous image">&#8249;</button>
-                <div class="login-carousel-dots" role="group" aria-label="Choose a community story">
-                    <button class="login-carousel-dot" type="button" aria-label="Show community story 1" aria-current="true" data-carousel-dot="0"></button>
-                    <button class="login-carousel-dot" type="button" aria-label="Show community story 2" aria-current="false" data-carousel-dot="1"></button>
-                    <button class="login-carousel-dot" type="button" aria-label="Show community story 3" aria-current="false" data-carousel-dot="2"></button>
-                </div>
-                <button class="login-carousel-arrow" type="button" data-carousel-next aria-label="Next image">&#8250;</button>
             </div>
         </section>
 
@@ -441,7 +385,6 @@
             if (!carousel) return;
 
             const slides = Array.from(carousel.querySelectorAll('[data-slide]'));
-            const dots = Array.from(carousel.querySelectorAll('[data-carousel-dot]'));
             const title = carousel.querySelector('[data-slide-title]');
             const copy = carousel.querySelector('[data-slide-copy]');
             const captions = [
@@ -449,10 +392,8 @@
                 ['Nourishment for brighter days', 'Fresh ingredients help us serve balanced meals.'],
                 ['Many hands, one caring community', 'Volunteers make the feeding scheme possible.']
             ];
-            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
             let current = 0;
             let timer = null;
-            let touchStartX = null;
 
             const showSlide = (index) => {
                 current = (index + slides.length) % slides.length;
@@ -461,7 +402,6 @@
                     slide.classList.toggle('is-active', active);
                     slide.setAttribute('aria-hidden', String(!active));
                 });
-                dots.forEach((dot, i) => dot.setAttribute('aria-current', String(i === current)));
                 title.textContent = captions[current][0];
                 copy.textContent = captions[current][1];
             };
@@ -469,29 +409,28 @@
             const stop = () => { if (timer) window.clearInterval(timer); timer = null; };
             const start = () => {
                 stop();
-                if (!reducedMotion.matches && !document.hidden && slides.length > 1) {
+                if (!document.hidden && slides.length > 1) {
                     timer = window.setInterval(() => showSlide(current + 1), 6000);
                 }
             };
-
-            carousel.querySelector('[data-carousel-prev]').addEventListener('click', () => { showSlide(current - 1); start(); });
-            carousel.querySelector('[data-carousel-next]').addEventListener('click', () => { showSlide(current + 1); start(); });
-            dots.forEach((dot) => dot.addEventListener('click', () => { showSlide(Number(dot.dataset.carouselDot)); start(); }));
-            carousel.addEventListener('mouseenter', stop);
-            carousel.addEventListener('mouseleave', start);
-            carousel.addEventListener('focusin', stop);
-            carousel.addEventListener('focusout', (event) => { if (!carousel.contains(event.relatedTarget)) start(); });
-            carousel.addEventListener('touchstart', (event) => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
-            carousel.addEventListener('touchend', (event) => {
-                if (touchStartX === null) return;
-                const delta = event.changedTouches[0].clientX - touchStartX;
-                touchStartX = null;
-                if (Math.abs(delta) > 45) { showSlide(current + (delta < 0 ? 1 : -1)); start(); }
-            }, { passive: true });
-            document.addEventListener('visibilitychange', start);
-            reducedMotion.addEventListener?.('change', start);
+            document.addEventListener('visibilitychange', () => start());
             showSlide(0);
             start();
+
+            const loginForm = document.querySelector('.login-card form');
+            const loginButton = loginForm?.querySelector('[type="submit"]');
+            if (loginForm && loginButton) {
+                loginForm.addEventListener('submit', (event) => {
+                    if (loginForm.dataset.submitting === 'true') {
+                        event.preventDefault();
+                        return;
+                    }
+                    loginForm.dataset.submitting = 'true';
+                    loginButton.disabled = true;
+                    loginButton.setAttribute('aria-busy', 'true');
+                    loginButton.textContent = 'Signing in...';
+                });
+            }
         })();
     </script>
 </body>

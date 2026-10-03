@@ -28,8 +28,23 @@
     }
     .view { min-height: 100vh; display: none; flex-direction: column; }
     .view.active { display: flex; }
-    #login-view { background: #f8f9fc; align-items: center; padding: 20px; }
-    .login-center { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
+    #login-view { background: #f8f9fc; align-items: stretch; flex-direction: row; padding: 0; }
+    .login-center { flex: 0 0 42%; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 42%; padding: 24px; overflow-y: auto; }
+    .login-content { width: 100%; max-width: 420px; margin: auto; }
+    .login-carousel { position: relative; flex: 1 1 58%; min-width: 0; min-height: 100vh; overflow: hidden; color: white; background: var(--primary-blue); }
+    .login-slide { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity 700ms ease, visibility 0s linear 700ms; }
+    .login-slide.is-active { opacity: 1; visibility: visible; z-index: 1; transition-delay: 0s; }
+    .login-slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .login-carousel::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(9,25,31,.3), transparent 36%, rgba(9,25,31,.64)); }
+    .login-carousel-brand, .login-carousel-caption { position: absolute; z-index: 3; }
+    .login-carousel-brand { top: 28px; left: 30px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .login-carousel-brand img { width: 54px; height: 42px; padding: 4px; object-fit: contain; border-radius: 9px; background: rgba(255,255,255,.92); }
+    .login-carousel-brand strong, .login-carousel-brand span { display: block; }
+    .login-carousel-brand span { margin-top: 2px; font-size: 12px; color: rgba(255,255,255,.84); }
+    .login-carousel-caption { left: 30px; bottom: 74px; max-width: min(75%, 520px); }
+    .login-carousel-caption h1 { font-size: clamp(22px, 2.5vw, 34px); line-height: 1.15; margin-bottom: 8px; }
+    .login-carousel-caption p { font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.9); }
+    @media (prefers-reduced-motion: reduce) { .login-slide { transition: none; } }
     .login-logo { margin-bottom: 24px; text-align: center; }
     .login-logo img { width: 96px; height: 96px; border-radius: 20px; object-fit: cover; }
     .login-brand { text-align: center; margin-bottom: 32px; }
@@ -45,7 +60,17 @@
     .register-link { text-align: center; margin-top: 12px; font-size: 14px; }
     .register-link a { color: var(--primary-blue); font-weight: 600; cursor: pointer; text-decoration: none; }
     .register-link a:hover { text-decoration: underline; }
-    .footer-copy { text-align: center; font-size: 11px; color: #98a2b3; line-height: 1.5; padding: 20px 40px; flex-shrink: 0; }
+    .footer-copy { text-align: center; font-size: 11px; color: #98a2b3; line-height: 1.5; padding: 20px 12px 0; flex-shrink: 0; }
+    @media (max-width: 760px) {
+      #login-view { flex-direction: column; }
+      .login-carousel { flex: 0 0 clamp(220px, 34vh, 320px); width: 100%; min-height: 0; }
+      .login-center { flex: 1 0 auto; width: 100%; padding: 18px 20px 24px; overflow: visible; }
+      .login-content { max-width: 420px; }
+      .login-carousel-brand { top: 18px; left: 20px; }
+      .login-carousel-caption { left: 20px; bottom: 64px; max-width: 82%; }
+      .login-carousel-caption h1 { font-size: 23px; }
+      .login-carousel-caption p { font-size: 13px; }
+    }
     .drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; backdrop-filter: blur(2px); }
     .drawer { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: var(--white); z-index: 2001; transition: 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
     .drawer.active { left: 0; }
@@ -166,7 +191,21 @@
 </div>
 
 <div class="view active" id="login-view">
+  <section class="login-carousel" aria-label="Tharimpepe community stories" data-login-carousel>
+    <div class="login-slide is-active" data-slide aria-hidden="false"><img src="img/login-carousel/community.svg" alt="Illustration of community members sharing a meal"></div>
+    <div class="login-slide" data-slide aria-hidden="true"><img src="img/login-carousel/meals.svg" alt="Illustration of a nutritious meal prepared for the community" loading="lazy"></div>
+    <div class="login-slide" data-slide aria-hidden="true"><img src="img/login-carousel/together.svg" alt="Illustration of volunteers preparing food together" loading="lazy"></div>
+    <div class="login-carousel-brand" aria-hidden="true">
+      <img src="img/icon.png" alt="">
+      <div><strong>Tharimpepe</strong><span>Feeding Scheme</span></div>
+    </div>
+    <div class="login-carousel-caption" aria-live="polite" aria-atomic="true">
+      <h1 data-slide-title>Our community, growing together</h1>
+      <p data-slide-copy>Working together to make every meal count.</p>
+    </div>
+  </section>
   <div class="login-center">
+    <div class="login-content">
     <div class="login-logo">
       <img src="img/icon.png" alt="Tharimpepe FSMS">
     </div>
@@ -197,8 +236,9 @@
       <div class="register-link">Don't have an account? <a onclick="openRegisterModal()">Create one</a></div>
       <a class="btn-sm primary" style="display:block;text-align:center;margin-top:14px;text-decoration:none;" onclick="openQuickDonate()">Quick Donate as Guest</a>
     </div>
+    <div class="footer-copy">&copy; 2026 Tharimpepe Feeding Scheme. All rights reserved.</div>
+    </div>
   </div>
-  <div class="footer-copy">&copy; 2026 Tharimpepe Feeding Scheme. All rights reserved.</div>
 </div>
 
 <div class="modal-overlay" id="register-overlay" onclick="closeRegisterModal()">
@@ -553,6 +593,47 @@ const isProbablyEmulator = origin.includes('10.0.2.2') || /emulator|sdk_gphone/i
 const host = isProbablyEmulator ? emulatorHost : lanHost;
 return `http://${host}/api`;
 })();
+(() => {
+  const carousel = document.querySelector('[data-login-carousel]');
+  if (!carousel) return;
+
+  const slides = Array.from(carousel.querySelectorAll('[data-slide]'));
+  const title = carousel.querySelector('[data-slide-title]');
+  const copy = carousel.querySelector('[data-slide-copy]');
+  const captions = [
+    ['Our community, growing together', 'Working together to make every meal count.'],
+    ['Nourishment for brighter days', 'Fresh ingredients help us serve balanced meals.'],
+    ['Many hands, one caring community', 'Volunteers make the feeding scheme possible.']
+  ];
+  let current = 0;
+  let timer = null;
+
+  function showSlide(index) {
+    current = (index + slides.length) % slides.length;
+    slides.forEach((slide, i) => {
+      const active = i === current;
+      slide.classList.toggle('is-active', active);
+      slide.setAttribute('aria-hidden', String(!active));
+    });
+    title.textContent = captions[current][0];
+    copy.textContent = captions[current][1];
+  }
+
+  function stop() {
+    if (timer) window.clearInterval(timer);
+    timer = null;
+  }
+
+  function start() {
+    stop();
+    if (!document.hidden && slides.length > 1) {
+      timer = window.setInterval(() => showSlide(current + 1), 6000);
+    }
+  }
+  document.addEventListener('visibilitychange', () => start());
+  showSlide(0);
+  start();
+})();
 let AUTH_TOKEN = localStorage.getItem('fsms_token') || '';
 let CURRENT_USER = null;
 let attendanceData = {};
@@ -654,15 +735,20 @@ async function doLogin() {
   btn.textContent = 'Login';
 }
 
-function doLogout() {
-  api('POST', 'logout');
-  localStorage.removeItem('fsms_token');
-  localStorage.removeItem('fsms_user');
-  AUTH_TOKEN = '';
-  CURRENT_USER = null;
-  document.getElementById('app-view').classList.remove('active');
-  document.getElementById('login-view').classList.add('active');
-  toggleDrawer();
+async function doLogout() {
+  try {
+    if (AUTH_TOKEN) await api('POST', 'logout');
+  } catch (e) {
+    // Always clear local credentials, even if the server cannot be reached.
+  } finally {
+    localStorage.removeItem('fsms_token');
+    localStorage.removeItem('fsms_user');
+    AUTH_TOKEN = '';
+    CURRENT_USER = null;
+    document.getElementById('app-view').classList.remove('active');
+    document.getElementById('login-view').classList.add('active');
+    toggleDrawer();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -759,9 +845,8 @@ async function doRegister() {
       password
     });
     if (res.success) {
-      toast('Account created! You can now login.', 'success');
+      toast('Account created! Your registration is pending admin approval. You will be able to log in once approved.', 'success');
       closeRegisterModal();
-      document.getElementById('login-user').value = username;
     } else {
       errEl.textContent = res.message;
       errEl.style.display = 'block';
@@ -854,7 +939,7 @@ async function loadDashboard() {
 
     document.getElementById('dash-cards').innerHTML = cards.map(c => `
       <div class="op-card">
-        <div class="op-info"><p>${c.label}</p><h3>${c.value}</h3><p>${c.sub}</p></div>
+        <div class="op-info"><p>${escapeHtml(c.label)}</p><h3>${escapeHtml(c.value)}</h3><p>${escapeHtml(c.sub)}</p></div>
         <div class="op-icon" style="background:${c.color};"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></div>
       </div>
     `).join('');
@@ -862,23 +947,23 @@ async function loadDashboard() {
     const invItems = d.food_stock_items || [];
     document.getElementById('dash-inventory').innerHTML = invItems.length ? invItems.map(i => `
       <div class="list-item">
-        <span><b>${i.label}</b><br><span class="text-muted">${i.quantity} ${i.unit}</span></span>
-        <span class="badge ${i.danger ? 'badge-danger' : 'badge-success'}">${i.percent}%</span>
+        <span><b>${escapeHtml(i.label)}</b><br><span class="text-muted">${escapeHtml(i.quantity)} ${escapeHtml(i.unit)}</span></span>
+        <span class="badge ${i.danger ? 'badge-danger' : 'badge-success'}">${escapeHtml(i.percent)}%</span>
       </div>
     `).join('') : '<p class="text-muted">No inventory data</p>';
 
     const trend = d.weekly_attendance_trend || [];
     document.getElementById('dash-trend').innerHTML = trend.length ? trend.map(t => `
       <div class="list-item">
-        <span>${t.label} (${t.date})</span>
-        <span><b>${t.count}</b> meals</span>
+        <span>${escapeHtml(t.label)} (${escapeHtml(t.date)})</span>
+        <span><b>${escapeHtml(t.count)}</b> meals</span>
       </div>
     `).join('') : '<p class="text-muted">No attendance data yet</p>';
 
     const donors = d.top_donors || [];
     document.getElementById('dash-donors').innerHTML = donors.length ? donors.map(dn => `
       <div class="list-item">
-        <span><b>${dn.DonorName}</b></span>
+        <span><b>${escapeHtml(dn.DonorName)}</b></span>
         <span>R${parseFloat(dn.total_donated || 0).toFixed(2)}</span>
       </div>
     `).join('') : '<p class="text-muted">No donor data yet</p>';
@@ -918,9 +1003,9 @@ async function loadBeneficiaries() {
     document.getElementById('ben-table').style.display = 'table';
     document.getElementById('ben-tbody').innerHTML = list.map(b => `
       <tr>
-        <td><b>${b.FirstName} ${b.LastName}</b></td>
-        <td>${b.Age || '-'}</td>
-        <td><span class="badge ${b.Status === 'active' ? 'badge-success' : 'badge-danger'}">${b.Status}</span></td>
+        <td><b>${escapeHtml(b.FirstName)} ${escapeHtml(b.LastName)}</b></td>
+        <td>${escapeHtml(b.Age || '-')}</td>
+        <td><span class="badge ${b.Status === 'active' ? 'badge-success' : 'badge-danger'}">${escapeHtml(b.Status)}</span></td>
         <td><button class="btn-sm" onclick="viewBeneficiary(${b.BeneficiaryID})">View</button></td>
       </tr>
     `).join('');
@@ -932,15 +1017,15 @@ async function viewBeneficiary(id) {
   if (!res.success) { toast(res.message, 'error'); return; }
   const b = res.data;
   showModal('Beneficiary Details', `
-    <p><b>Name:</b> ${b.FirstName} ${b.LastName}</p>
-    <p><b>Age:</b> ${b.Age || '-'}</p>
-    <p><b>Gender:</b> ${b.Gender || '-'}</p>
-    <p><b>Phone:</b> ${b.Phone || '-'}</p>
-    <p><b>Email:</b> ${b.Email || '-'}</p>
-    <p><b>Address:</b> ${b.Address || '-'}</p>
-    <p><b>Status:</b> ${b.Status}</p>
-    <p><b>Registered:</b> ${b.RegistrationDate}</p>
-    <p><b>Notes:</b> ${b.Notes || '-'}</p>
+    <p><b>Name:</b> ${escapeHtml(b.FirstName)} ${escapeHtml(b.LastName)}</p>
+    <p><b>Age:</b> ${escapeHtml(b.Age || '-')}</p>
+    <p><b>Gender:</b> ${escapeHtml(b.Gender || '-')}</p>
+    <p><b>Phone:</b> ${escapeHtml(b.Phone || '-')}</p>
+    <p><b>Email:</b> ${escapeHtml(b.Email || '-')}</p>
+    <p><b>Address:</b> ${escapeHtml(b.Address || '-')}</p>
+    <p><b>Status:</b> ${escapeHtml(b.Status)}</p>
+    <p><b>Registered:</b> ${escapeHtml(b.RegistrationDate)}</p>
+    <p><b>Notes:</b> ${escapeHtml(b.Notes || '-')}</p>
   `);
 }
 
@@ -1008,8 +1093,8 @@ async function loadAttendanceGrid() {
       const initials = (b.FirstName?.[0] || '') + (b.LastName?.[0] || '');
       attendanceData[b.BeneficiaryID] = 'present';
       return `<div class="att-tile present" id="att-tile-${b.BeneficiaryID}" onclick="toggleAttStatus(${b.BeneficiaryID})">
-        <div class="att-avatar" style="background:${colors[i % colors.length]};">${initials || '?'}</div>
-        <p style="font-size:13px;font-weight:700;">${b.FirstName} ${b.LastName}</p>
+        <div class="att-avatar" style="background:${colors[i % colors.length]};">${escapeHtml(initials || '?')}</div>
+        <p style="font-size:13px;font-weight:700;">${escapeHtml(b.FirstName)} ${escapeHtml(b.LastName)}</p>
         <p style="font-size:11px;color:var(--text-muted);" id="att-status-${b.BeneficiaryID}">Present</p>
       </div>`;
     }).join('');
@@ -1056,10 +1141,10 @@ async function loadAttendanceHistory() {
     document.getElementById('att-history-table').style.display = 'table';
     document.getElementById('att-history-tbody').innerHTML = data.map(d => `
       <tr>
-        <td>${d.SessionDate}</td>
-        <td>${d.present_count || 0}</td>
-        <td>${d.absent_count || 0}</td>
-        <td><span class="badge badge-success">${d.percentage || 0}%</span></td>
+        <td>${escapeHtml(d.SessionDate)}</td>
+        <td>${escapeHtml(d.present_count || 0)}</td>
+        <td>${escapeHtml(d.absent_count || 0)}</td>
+        <td><span class="badge badge-success">${escapeHtml(d.percentage || 0)}%</span></td>
       </tr>
     `).join('');
   } catch (e) { toast('Failed to load history', 'error'); }
@@ -1092,10 +1177,10 @@ async function loadStock() {
       const status = i.expiry_status || 'ok';
       const badgeClass = status === 'expired' ? 'badge-danger' : status === 'expiring_soon' ? 'badge-warning' : 'badge-success';
       return `<tr>
-        <td><b>${i.ItemName}</b></td>
-        <td>${i.Quantity}</td>
-        <td>${i.Unit}</td>
-        <td><span class="badge ${badgeClass}">${status}</span></td>
+        <td><b>${escapeHtml(i.ItemName)}</b></td>
+        <td>${escapeHtml(i.Quantity)}</td>
+        <td>${escapeHtml(i.Unit)}</td>
+        <td><span class="badge ${badgeClass}">${escapeHtml(status)}</span></td>
       </tr>`;
     }).join('');
   } catch (e) { toast('Failed to load stock', 'error'); }
@@ -1157,8 +1242,8 @@ async function loadDonations() {
     }
     document.getElementById('don-list').innerHTML = list.map(d => `
       <div class="list-item">
-        <div><b>${d.DonorName}</b><br><span class="text-muted">${d.DonationType} ${d.Amount ? '- R' + parseFloat(d.Amount).toFixed(2) : ''}</span></div>
-        <span class="text-muted">${d.DonationDate}</span>
+        <div><b>${escapeHtml(d.DonorName)}</b><br><span class="text-muted">${escapeHtml(d.DonationType)} ${d.Amount ? '- R' + parseFloat(d.Amount).toFixed(2) : ''}</span></div>
+        <span class="text-muted">${escapeHtml(d.DonationDate)}</span>
       </div>
     `).join('');
   } catch (e) { toast('Failed to load donations', 'error'); }
@@ -1190,8 +1275,8 @@ async function loadVolunteers() {
     document.getElementById('vol-table').style.display = 'table';
     document.getElementById('vol-tbody').innerHTML = list.map(v => `
       <tr>
-        <td><b>${v.FirstName || v.FullName || 'Unknown'} ${v.LastName || ''}</b></td>
-        <td><span class="badge ${v.AvailabilityStatus === 'available' ? 'badge-success' : 'badge-warning'}">${v.AvailabilityStatus || 'N/A'}</span></td>
+        <td><b>${escapeHtml(v.FirstName || v.FullName || 'Unknown')} ${escapeHtml(v.LastName || '')}</b></td>
+        <td><span class="badge ${v.AvailabilityStatus === 'available' ? 'badge-success' : 'badge-warning'}">${escapeHtml(v.AvailabilityStatus || 'N/A')}</span></td>
         <td><button class="btn-sm" onclick="viewVolunteer(${v.VolunteerID})">View</button></td>
       </tr>
     `).join('');
@@ -1204,12 +1289,12 @@ async function viewVolunteer(id) {
   const v = res.data;
   const canManage = CURRENT_USER && ['admin', 'staff'].includes(CURRENT_USER.role);
   showModal('Volunteer Details', `
-    <p><b>Name:</b> ${v.FirstName || v.FullName} ${v.LastName || ''}</p>
-    <p><b>Phone:</b> ${v.Phone || '-'}</p>
-    <p><b>Email:</b> ${v.Email || '-'}</p>
-    <p><b>Address:</b> ${v.Address || '-'}</p>
-    <p><b>Status:</b> ${v.AvailabilityStatus || '-'}</p>
-    <p><b>Volunteer Status:</b> ${v.VolunteerStatus || '-'}</p>
+    <p><b>Name:</b> ${escapeHtml(v.FirstName || v.FullName)} ${escapeHtml(v.LastName || '')}</p>
+    <p><b>Phone:</b> ${escapeHtml(v.Phone || '-')}</p>
+    <p><b>Email:</b> ${escapeHtml(v.Email || '-')}</p>
+    <p><b>Address:</b> ${escapeHtml(v.Address || '-')}</p>
+    <p><b>Status:</b> ${escapeHtml(v.AvailabilityStatus || '-')}</p>
+    <p><b>Volunteer Status:</b> ${escapeHtml(v.VolunteerStatus || '-')}</p>
     ${canManage ? `<div class="flex-row gap-4" style="margin-top:16px;"><button class="btn-sm primary" onclick="editVolunteer(${id})">Edit</button><button class="btn-sm" onclick="deactivateVolunteer(${id})">Deactivate</button></div>` : ''}
   `);
 }
@@ -1241,7 +1326,7 @@ async function createDonorAccount() {
   const data = { full_name: document.getElementById('donor-account-name').value.trim(), username: document.getElementById('donor-account-username').value.trim(), email: document.getElementById('donor-account-email').value.trim(), password: document.getElementById('donor-account-password').value, role: 'donor' };
   if (!data.full_name || !data.username || !data.email || !data.password) { toast('All account fields are required', 'error'); return; }
   const res = await api('POST', 'register', data);
-  if (res.success) { closeModal(); toast('Account created. You can now log in.', 'success'); } else toast(res.message, 'error');
+  if (res.success) { closeModal(); toast('Account created. Your registration is pending admin approval. You will be able to log in once approved.', 'success'); } else toast(res.message, 'error');
 }
 
 async function editVolunteer(id) {
@@ -1321,7 +1406,7 @@ async function loadReport() {
     if (to) url += '&to_date=' + to;
     const res = await api('GET', url);
     document.getElementById('rpt-loading').style.display = 'none';
-    if (!res.success) { document.getElementById('rpt-table-wrap').innerHTML = '<p class="text-muted">' + res.message + '</p>'; document.getElementById('rpt-content').style.display = 'block'; return; }
+    if (!res.success) { document.getElementById('rpt-table-wrap').innerHTML = '<p class="text-muted">' + escapeHtml(res.message) + '</p>'; document.getElementById('rpt-content').style.display = 'block'; return; }
 
     const data = res.data || [];
     if (Array.isArray(data) && data.length === 0) {
@@ -1335,12 +1420,12 @@ async function loadReport() {
       html = '<table class="data-table"><tbody>';
       Object.entries(data).forEach(([key, val]) => {
         if (val && typeof val === 'object') {
-          html += `<tr><td colspan="2"><b>${key}</b></td></tr>`;
+          html += `<tr><td colspan="2"><b>${escapeHtml(key)}</b></td></tr>`;
           Object.entries(val).forEach(([k, v]) => {
-            html += `<tr><td style="padding-left:16px;">${k}</td><td><b>${v ?? '-'}</b></td></tr>`;
+            html += `<tr><td style="padding-left:16px;">${escapeHtml(k)}</td><td><b>${escapeHtml(v ?? '-')}</b></td></tr>`;
           });
         } else {
-          html += `<tr><td>${key}</td><td><b>${val ?? '-'}</b></td></tr>`;
+          html += `<tr><td>${escapeHtml(key)}</td><td><b>${escapeHtml(val ?? '-')}</b></td></tr>`;
         }
       });
       html += '</tbody></table>';
@@ -1348,9 +1433,9 @@ async function loadReport() {
       const keys = Object.keys(data[0]);
       lastReportKeys = keys;
       lastReportData = data;
-      html = '<table class="data-table"><thead><tr>' + keys.map(k => '<th>' + k.replace(/_/g, ' ') + '</th>').join('') + '</tr></thead><tbody>';
+      html = '<table class="data-table"><thead><tr>' + keys.map(k => '<th>' + escapeHtml(k.replace(/_/g, ' ')) + '</th>').join('') + '</tr></thead><tbody>';
       data.forEach(row => {
-        html += '<tr>' + keys.map(k => '<td>' + (row[k] ?? '-') + '</td>').join('') + '</tr>';
+        html += '<tr>' + keys.map(k => '<td>' + escapeHtml(row[k] ?? '-') + '</td>').join('') + '</tr>';
       });
       html += '</tbody></table>';
     }
