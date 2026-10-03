@@ -8,6 +8,7 @@ function handleDonations($method, $id) {
 
     switch ($method) {
         case 'GET':
+            requireApiRole($user, ['admin', 'staff', 'volunteer']);
             if ($id) {
                 $data = $model->getDonationById((int)$id);
                 if (!$data) {
@@ -61,6 +62,7 @@ function handleDonations($method, $id) {
             break;
 
         case 'PUT':
+            requireApiRole($user, ['admin', 'staff', 'volunteer']);
             if (!$id) {
                 apiJsonResponse(false, 'Donation ID is required', null, 400);
             }
@@ -81,6 +83,7 @@ function handleDonations($method, $id) {
             break;
 
         case 'DELETE':
+            requireApiRole($user, ['admin']);
             if (!$id) {
                 apiJsonResponse(false, 'Donation ID is required', null, 400);
             }

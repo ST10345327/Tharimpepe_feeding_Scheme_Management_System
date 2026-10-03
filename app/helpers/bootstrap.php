@@ -62,12 +62,6 @@ require_once HELPERS_PATH . '/FormValidator.php';
 // Load database configuration
 require_once CONFIG_PATH . '/database.php';
 
-// Load session handler
-require_once HELPERS_PATH . '/SessionHandler.php';
-
-// Load RBAC (role-based access control) helpers
-require_once HELPERS_PATH . '/Rbac.php';
-
 // Configure secure session cookies before starting session
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
@@ -80,6 +74,12 @@ if (session_status() === PHP_SESSION_NONE) {
     ]);
     session_start();
 }
+
+// Load the session helpers after cookie settings and session initialization.
+require_once HELPERS_PATH . '/SessionHandler.php';
+
+// Load RBAC helpers after the session has started with the configured cookies.
+require_once HELPERS_PATH . '/Rbac.php';
 
 /**
  * HZ-BOOTSTRAP-001

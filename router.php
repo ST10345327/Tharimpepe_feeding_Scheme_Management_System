@@ -11,6 +11,18 @@ if (preg_match('#^/api(?:/.*)?$#', $path, $m)) {
 
 $publicFile = $publicRoot . str_replace('/', DIRECTORY_SEPARATOR, $path);
 $extension = strtolower(pathinfo($publicFile, PATHINFO_EXTENSION));
+$resolvedPublicRoot = realpath($publicRoot);
+$resolvedPublicFile = realpath($publicFile);
+
+// Let PHP's built-in server execute real PHP pages (for example donate.php)
+// instead of routing them through index.php and showing the staff login page.
+if ($extension === 'php' && $resolvedPublicRoot && $resolvedPublicFile && is_file($resolvedPublicFile)) {
+    $publicRootPrefix = rtrim($resolvedPublicRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    if (strncasecmp($resolvedPublicFile, $publicRootPrefix, strlen($publicRootPrefix)) === 0) {
+        return false;
+    }
+}
+
 $mimeTypes = [
     'css' => 'text/css; charset=UTF-8',
     'js' => 'application/javascript; charset=UTF-8',
