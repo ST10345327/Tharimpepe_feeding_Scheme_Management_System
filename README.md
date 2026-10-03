@@ -19,6 +19,8 @@ This Figma prototype showcases the complete user interface design for all module
 
 Quick start: see [GETTING_STARTED.md](GETTING_STARTED.md) for a minimal, copy-paste workflow to clone, configure, and run the project.
 
+**Task 2 planning:** See the [Azure Boards hierarchy](docs/TASK_2_AZURE_BOARDS_HIERARCHY.md), [GitHub linking workflow and backlog](docs/TASK_2_AZURE_BOARDS_BACKLOG.md), and initial [website and Android user guide](docs/USER_GUIDE.md).
+
 **Demo video:** 
 - Website: https://youtu.be/vvwGJumiVZw
 - Mobile App: https://youtu.be/GrrGO9rQQq0
