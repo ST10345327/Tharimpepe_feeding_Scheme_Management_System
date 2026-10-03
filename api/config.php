@@ -65,25 +65,31 @@ function requireAuth() {
 }
 
 function getAuthenticatedApiUser() {
-    $headers = getallheaders();
-    $token = null;
-
-    if (isset($headers['Authorization'])) {
-        $parts = explode(' ', $headers['Authorization']);
-        if (count($parts) === 2 && $parts[0] === 'Bearer') {
-            $token = $parts[1];
+    $authorization = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+    if (function_exists('getallheaders')) {
+        foreach (getallheaders() as $name => $value) {
+            if (strcasecmp($name, 'Authorization') === 0) {
+                $authorization = $value;
+                break;
+            }
         }
     }
 
-    if (!$token && isset($_GET['token'])) {
-        $token = $_GET['token'];
+    if (!preg_match('/^Bearer\s+([a-f0-9]{64})$/i', trim($authorization), $matches)) {
+        return null;
     }
-
-    if (!$token) return null;
+    $tokenHash = hash('sha256', strtolower($matches[1]));
 
     $db = getDBConnection();
-    $stmt = $db->prepare("SELECT UserID, Username, Role, Status FROM Users WHERE MD5(CONCAT(UserID, Username, PasswordHash)) = :token AND Status = 'active' LIMIT 1");
-    $stmt->execute([':token' => $token]);
+    $stmt = $db->prepare("SELECT u.UserID, u.Username, u.Role, u.Status, t.TokenID AS ApiTokenID
+                          FROM ApiTokens t
+                          INNER JOIN Users u ON u.UserID = t.UserID
+                          WHERE t.TokenHash = :token_hash
+                            AND t.RevokedAt IS NULL
+                            AND t.ExpiresAt > UTC_TIMESTAMP()
+                            AND u.Status = 'active'
+                          LIMIT 1");
+    $stmt->execute([':token_hash' => $tokenHash]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     return $user ?: null;
@@ -95,8 +101,27 @@ function requireApiRole($user, $roles) {
     }
 }
 
-function generateToken($userId, $username, $passwordHash) {
-    return md5($userId . $username . $passwordHash);
+function createApiToken(PDO $db, $userId) {
+    $token = bin2hex(random_bytes(32));
+    $expiresAt = time() + (30 * 24 * 60 * 60);
+    $expiresAtSql = gmdate('Y-m-d H:i:s', $expiresAt);
+
+    $stmt = $db->prepare('INSERT INTO ApiTokens (UserID, TokenHash, ExpiresAt) VALUES (:user_id, :token_hash, :expires_at)');
+    $stmt->execute([
+        ':user_id' => (int)$userId,
+        ':token_hash' => hash('sha256', $token),
+        ':expires_at' => $expiresAtSql,
+    ]);
+
+    return [
+        'token' => $token,
+        'expires_at' => gmdate('c', $expiresAt),
+    ];
+}
+
+function revokeApiToken(PDO $db, $tokenId) {
+    $stmt = $db->prepare('UPDATE ApiTokens SET RevokedAt = UTC_TIMESTAMP() WHERE TokenID = :token_id AND RevokedAt IS NULL');
+    $stmt->execute([':token_id' => (int)$tokenId]);
 }
 
 function validateRequired($data, $fields) {

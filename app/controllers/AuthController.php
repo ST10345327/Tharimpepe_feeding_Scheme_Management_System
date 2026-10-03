@@ -16,6 +16,12 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'login';
 $error = "";
 $success = "";
 
+// Treat a repeated login POST from an already authenticated browser as a no-op.
+if ($action === 'login' && $_SERVER["REQUEST_METHOD"] === "POST" && isUserLoggedIn()) {
+    header("Location: /");
+    exit();
+}
+
 try {
     // Get database connection
     $db = getDBConnection();

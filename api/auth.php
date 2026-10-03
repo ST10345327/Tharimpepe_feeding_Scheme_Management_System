@@ -19,7 +19,7 @@ function handleLogin() {
         apiJsonResponse(false, 'Account is not active. Please contact an administrator.', null, 403);
     }
 
-    $token = generateToken($user['UserID'], $user['Username'], $user['PasswordHash']);
+    $token = createApiToken($db, $user['UserID']);
 
     apiJsonResponse(true, 'Login successful', [
         'user' => [
@@ -28,7 +28,8 @@ function handleLogin() {
             'email' => $user['Email'],
             'role' => $user['Role'],
         ],
-        'token' => $token
+        'token' => $token['token'],
+        'token_expires_at' => $token['expires_at']
     ]);
 }
 
@@ -80,5 +81,12 @@ function handleRegister() {
 }
 
 function handleLogout() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        apiJsonResponse(false, 'Method not allowed', null, 405);
+    }
+
+    $user = requireAuth();
+    $db = getDBConnection();
+    revokeApiToken($db, $user['ApiTokenID']);
     apiJsonResponse(true, 'Logout successful');
 }
