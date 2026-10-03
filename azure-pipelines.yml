@@ -22,10 +22,12 @@ jobs:
 
       - bash: |
           set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes php-cli php-sqlite3
           php --version
           php -r 'if (PHP_MAJOR_VERSION !== 8) { fwrite(STDERR, "PHP 8 is required.\n"); exit(1); }
           if (!extension_loaded("pdo_sqlite")) { fwrite(STDERR, "The pdo_sqlite extension is required by the test suite.\n"); exit(1); }'
-        displayName: Check PHP runtime and SQLite driver
+        displayName: Install and verify PHP runtime
 
       - bash: |
           set -euo pipefail
