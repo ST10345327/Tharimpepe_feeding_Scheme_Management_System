@@ -15,7 +15,7 @@ GitHub remains the source repository. Azure Boards holds planning and work-item 
 
 | Job | Environment | Checks |
 |---|---|---|
-| `PhpValidation` | Microsoft-hosted `ubuntu-24.04`, preinstalled PHP 8 and `pdo_sqlite` | `git ls-files -z -- '*.php' \| xargs -0 -r -n 1 php -l`; `php tests/run_all_tests.php` with `FSMS_TEST_SQLITE=1` |
+| `PhpValidation` | Microsoft-hosted `ubuntu-24.04`; installs PHP CLI and `pdo_sqlite` with `apt` | `git ls-files -z -- '*.php' \| xargs -0 -r -n 1 php -l`; `php tests/run_all_tests.php` with `FSMS_TEST_SQLITE=1` |
 | `AndroidDebugBuild` | Microsoft-hosted `ubuntu-24.04`, Node.js 20, Java and Android SDK | `npm ci`, then `cd android && ./gradlew assembleDebug`; verifies and publishes `android/app/build/outputs/apk/debug/app-debug.apk` |
 
 The PHP suite runs against in-memory SQLite so it does not require MySQL or alter a shared database. The runner exits nonzero if an assertion or test errors. The Android job compiles the checked-in Capacitor Android project; it does not launch an emulator or perform device UI tests.
