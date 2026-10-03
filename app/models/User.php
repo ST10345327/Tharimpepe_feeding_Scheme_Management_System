@@ -236,14 +236,41 @@ class User
         // Hash new password
         $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
 
-        $query = "UPDATE " . $this->table . " 
-                  SET PasswordHash = :password_hash 
-                  WHERE UserID = :user_id";
+        $ownsTransaction = !$this->conn->inTransaction();
+        if ($ownsTransaction) {
+            $this->conn->beginTransaction();
+        }
 
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":password_hash", $hashedPassword);
-        $stmt->bindParam(":user_id", $userId);
+        try {
+            $query = "UPDATE " . $this->table . "
+                      SET PasswordHash = :password_hash
+                      WHERE UserID = :user_id";
+            $stmt = $this->conn->prepare($query);
+            $updated = $stmt->execute([
+                ':password_hash' => $hashedPassword,
+                ':user_id' => $userId,
+            ]);
 
-        return $stmt->execute();
+            if (!$updated) {
+                if ($ownsTransaction) $this->conn->rollBack();
+                return false;
+            }
+
+            // Password changes invalidate every previously issued API bearer token.
+            $revoke = $this->conn->prepare(
+                'UPDATE ApiTokens SET RevokedAt = UTC_TIMESTAMP() WHERE UserID = :user_id AND RevokedAt IS NULL'
+            );
+            $revoke->execute([':user_id' => $userId]);
+
+            if ($ownsTransaction) {
+                $this->conn->commit();
+            }
+            return true;
+        } catch (Throwable $e) {
+            if ($ownsTransaction && $this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            throw $e;
+        }
     }
 }

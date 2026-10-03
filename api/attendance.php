@@ -1,6 +1,13 @@
 <?php
 function handleAttendance($method, $id, $subresource) {
     $user = requireAuth();
+    if ($method === 'GET') {
+        requireApiRole($user, ['admin', 'staff', 'volunteer']);
+    } elseif ($method === 'POST') {
+        requireApiRole($user, ['admin', 'staff', 'volunteer']);
+    } elseif ($method === 'PUT' || $method === 'DELETE') {
+        requireApiRole($user, ['admin', 'staff']);
+    }
     $db = getDBConnection();
     $model = new Attendance($db);
 
