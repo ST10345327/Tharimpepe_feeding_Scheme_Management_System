@@ -22,12 +22,14 @@ define('MODELS_PATH', APP_PATH . '/models');
 define('VIEWS_PATH', APP_PATH . '/views');
 define('PUBLIC_PATH', APP_ROOT . '/public');
 
+require_once HELPERS_PATH . '/Security.php';
+requireHttpsTransport();
+
 // Define BASE_URL for consistent URL routing across all deployment configurations
 // Supports XAMPP, vhost, and router-based deployments
 define('BASE_URL', getenv('BASE_URL') ?: (
-    isset($_SERVER['REQUEST_SCHEME']) && isset($_SERVER['HTTP_HOST'])
-        ? $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . 
-          (strpos($_SERVER['REQUEST_URI'], '/index.php') !== false ? '/' : '/')
+    isset($_SERVER['HTTP_HOST'])
+        ? (isHttpsTransport() ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . '/'
         : '/'
 ));
 
@@ -68,7 +70,7 @@ if (session_status() === PHP_SESSION_NONE) {
         'lifetime' => 0,
         'path' => '/',
         'domain' => '',
-        'secure' => !empty($_SERVER['HTTPS']),
+        'secure' => isHttpsTransport(),
         'httponly' => true,
         'samesite' => 'Lax'
     ]);
