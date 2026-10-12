@@ -40,14 +40,14 @@ $navItems = rbacNavItemsForRole($role);
                 <span class="fsms-nav-text"><?php echo htmlspecialchars($item['label']); ?></span>
             </a>
         <?php endforeach; ?>
-
-        <div class="fsms-nav-bottom">
-            <a class="fsms-nav-link" href="/index.php?action=logout">
-                <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
-                <span class="fsms-nav-text">Logout</span>
-            </a>
-        </div>
     </nav>
+
+    <div class="fsms-nav-bottom">
+        <a class="fsms-nav-link" href="/index.php?action=logout">
+            <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
+            <span class="fsms-nav-text">Logout</span>
+        </a>
+    </div>
 </aside>
 
 <!-- Offcanvas nav for small screens -->
