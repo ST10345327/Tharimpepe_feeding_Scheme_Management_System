@@ -62,8 +62,7 @@
             z-index: 2;
         }
 
-        .login-mission-brand,
-        .login-mission-caption {
+        .login-mission-brand {
             position: absolute;
             z-index: 3;
         }
@@ -89,21 +88,6 @@
         .login-mission-brand span { display: block; }
         .login-mission-brand strong { font-size: 15px; }
         .login-mission-brand span { color: rgba(255,255,255,.82); font-size: 12px; margin-top: 2px; }
-
-        .login-mission-caption {
-            bottom: 76px;
-            left: 36px;
-            max-width: min(70%, 560px);
-        }
-
-        .login-mission-caption h1 {
-            font-size: clamp(24px, 3vw, 38px);
-            font-weight: 700;
-            line-height: 1.12;
-            margin-bottom: 10px;
-        }
-
-        .login-mission-caption p { color: rgba(255,255,255,.9); font-size: 15px; line-height: 1.5; margin: 0; }
 
         @media (prefers-reduced-motion: reduce) {
             .login-slide { transition: none; }
@@ -261,12 +245,6 @@
                 min-height: 320px;
             }
 
-            .login-mission-caption {
-                bottom: 72px;
-                left: 24px;
-                max-width: 80%;
-            }
-
             .login-mission-brand { left: 24px; top: 22px; }
 
             .login-panel {
@@ -276,9 +254,6 @@
 
         @media (max-width: 520px) {
             .login-mission { min-height: 270px; }
-            .login-mission-caption { bottom: 66px; }
-            .login-mission-caption h1 { font-size: 25px; }
-            .login-mission-caption p { font-size: 13px; }
             .login-mission-brand img { height: 38px; width: 50px; }
             .login-mission-brand { font-size: 13px; }
             .login-card {
@@ -289,6 +264,7 @@
 </head>
 <body>
     <main class="login-shell">
+        <!-- Keep this carousel image-led while retaining the organization logo and name. -->
         <section class="login-mission" aria-label="Tharimpepe community stories" data-login-carousel>
             <div class="login-slide is-active" data-slide aria-hidden="false">
                 <img src="/assets/images/login-carousel/community.svg" alt="Illustration of community members sharing a meal" fetchpriority="high">
@@ -302,10 +278,6 @@
             <div class="login-mission-brand" aria-hidden="true">
                 <img src="/assets/images/fsmslogo.png" alt="" width="58" height="44">
                 <div><strong>Tharimpepe</strong><span>Feeding Scheme</span></div>
-            </div>
-            <div class="login-mission-caption" aria-live="polite" aria-atomic="true">
-                <h1 data-slide-title>Our community, growing together</h1>
-                <p data-slide-copy>Working together to make every meal count.</p>
             </div>
         </section>
 
@@ -385,13 +357,6 @@
             if (!carousel) return;
 
             const slides = Array.from(carousel.querySelectorAll('[data-slide]'));
-            const title = carousel.querySelector('[data-slide-title]');
-            const copy = carousel.querySelector('[data-slide-copy]');
-            const captions = [
-                ['Our community, growing together', 'Working together to make every meal count.'],
-                ['Nourishment for brighter days', 'Fresh ingredients help us serve balanced meals.'],
-                ['Many hands, one caring community', 'Volunteers make the feeding scheme possible.']
-            ];
             let current = 0;
             let timer = null;
 
@@ -402,8 +367,6 @@
                     slide.classList.toggle('is-active', active);
                     slide.setAttribute('aria-hidden', String(!active));
                 });
-                title.textContent = captions[current][0];
-                copy.textContent = captions[current][1];
             };
 
             const stop = () => { if (timer) window.clearInterval(timer); timer = null; };
