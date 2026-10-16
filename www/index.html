@@ -101,6 +101,7 @@
     .op-info h3 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
     .op-info p:last-child { font-size: 11px; color: #98a2b3; }
     .op-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+    .op-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .profile-avatar-mobile { width: 76px; height: 76px; margin: 0 auto; border-radius: 50%; background: var(--primary-blue); color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; }
     .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 68px; background: var(--primary-blue); display: flex; z-index: 1000; }
     .nav-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); font-size: 10px; gap: 4px; cursor: pointer; }
@@ -153,9 +154,20 @@
     .tab-btn.active { background: var(--primary-blue); color: white; }
     .tab-btn:not(:last-child) { border-right: 1px solid var(--border-color); }
     .rpt-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .rpt-table-wrap table { min-width: 480px; }
+    .rpt-table-wrap .report-data-table { width: max-content; min-width: 720px; table-layout: auto; }
+    .rpt-table-wrap .report-data-table th,
+    .rpt-table-wrap .report-data-table td { padding: 10px 12px; white-space: nowrap; }
+    .rpt-table-wrap .report-data-table th { font-size: 12px; text-transform: none; }
+    .report-scroll-hint { margin-bottom: 8px; }
     .rpt-actions { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-    @media print { header, nav, .drawer, .drawer-overlay, .bottom-nav, .rpt-actions, #screen-reports .card:first-child { display: none !important; } main { padding: 0 !important; } .card { break-inside: avoid; border: none !important; box-shadow: none !important; padding: 0 !important; } }
+    @media print {
+      header, nav, .drawer, .drawer-overlay, .bottom-nav, .rpt-actions, .report-scroll-hint, #screen-reports .card:first-child { display: none !important; }
+      main { padding: 0 !important; }
+      .card { break-inside: avoid; border: none !important; box-shadow: none !important; padding: 0 !important; }
+      .rpt-table-wrap { overflow: visible !important; }
+      .rpt-table-wrap .report-data-table { width: 100%; min-width: 0; table-layout: auto; }
+      .rpt-table-wrap .report-data-table th, .rpt-table-wrap .report-data-table td { white-space: normal; overflow-wrap: anywhere; padding: 4px; font-size: 8pt; }
+    }
   </style>
 </head>
 <body>
@@ -358,6 +370,7 @@
         <div class="card">
           <div class="section-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Attendance History</div>
           <div id="att-history-loading" class="loading">Loading</div>
+          <p id="att-history-message" class="text-muted" role="status" style="display:none;"></p>
           <table class="data-table" id="att-history-table" style="display:none;">
             <thead><tr><th>Date</th><th>Present</th><th>Absent</th><th>Rate</th></tr></thead>
             <tbody id="att-history-tbody"></tbody>
@@ -885,19 +898,28 @@ async function loadDashboard() {
     const sched = d.scheduling_stats || {};
     const kpis = d.kpis || {};
 
+    // Match the website dashboard's familiar people, calendar, inventory, and giving symbols.
+    const dashboardIcons = {
+      beneficiaries: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      attendance: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 15l2.5 2.5L16 12"/></svg>',
+      volunteers: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>',
+      stock: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 4.5v9L12 21l-9-4.5v-9L12 3Z"/><path d="M3.5 7.7 12 12l8.5-4.3M12 12v9M7.5 5.2l9 4.6"/></svg>',
+      donations: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 7v14M12 7H8.5a2.5 2.5 0 1 1 2.5-2.5V7Zm0 0h3.5A2.5 2.5 0 1 0 13 4.5V7Z"/></svg>',
+      shifts: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M12 14v4l3 2"/></svg>'
+    };
     const cards = [
-      { label: 'Active Beneficiaries', value: sys.active_beneficiaries || 0, sub: 'Total: ' + (sys.total_beneficiaries || 0), color: 'var(--success-green)' },
-      { label: "Today's Attendance", value: feed.today_attendance || 0, sub: 'Weekly: ' + (feed.weekly_attendance || 0), color: 'var(--info-blue)' },
-      { label: 'Available Volunteers', value: sys.active_volunteers || 0, sub: 'Total: ' + (sys.total_volunteers || 0), color: 'var(--accent-purple)' },
-      { label: 'Items in Stock', value: food.items_in_stock || 0, sub: 'Low stock: ' + (food.low_stock_items || 0), color: 'var(--warning-orange)' },
-      { label: 'Monthly Donations', value: d.donation_stats?.monthly_donations_count || 0, sub: 'Amount: R' + (parseFloat(d.donation_stats?.monthly_donations_amount) || 0).toFixed(2), color: 'var(--primary-blue)' },
-      { label: "Today's Shifts", value: sched.today_shifts || 0, sub: 'Upcoming: ' + (sched.upcoming_shifts || 0), color: 'var(--danger-red)' },
+      { label: 'Active Beneficiaries', value: sys.active_beneficiaries || 0, sub: 'Total: ' + (sys.total_beneficiaries || 0), color: 'var(--success-green)', icon: 'beneficiaries' },
+      { label: "Today's Attendance", value: feed.today_attendance || 0, sub: 'Weekly: ' + (feed.weekly_attendance || 0), color: 'var(--info-blue)', icon: 'attendance' },
+      { label: 'Available Volunteers', value: sys.active_volunteers || 0, sub: 'Total: ' + (sys.total_volunteers || 0), color: 'var(--accent-purple)', icon: 'volunteers' },
+      { label: 'Items in Stock', value: food.items_in_stock || 0, sub: 'Low stock: ' + (food.low_stock_items || 0), color: 'var(--warning-orange)', icon: 'stock' },
+      { label: 'Monthly Donations', value: d.donation_stats?.monthly_donations_count || 0, sub: 'Amount: R' + (parseFloat(d.donation_stats?.monthly_donations_amount) || 0).toFixed(2), color: 'var(--primary-blue)', icon: 'donations' },
+      { label: "Today's Shifts", value: sched.today_shifts || 0, sub: 'Upcoming: ' + (sched.upcoming_shifts || 0), color: 'var(--danger-red)', icon: 'shifts' },
     ];
 
     document.getElementById('dash-cards').innerHTML = cards.map(c => `
       <div class="op-card">
         <div class="op-info"><p>${escapeHtml(c.label)}</p><h3>${escapeHtml(c.value)}</h3><p>${escapeHtml(c.sub)}</p></div>
-        <div class="op-icon" style="background:${c.color};"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></div>
+        <div class="op-icon" style="background:${c.color};">${dashboardIcons[c.icon]}</div>
       </div>
     `).join('');
 
@@ -973,6 +995,9 @@ async function viewBeneficiary(id) {
   const res = await api('GET', 'beneficiaries/' + id);
   if (!res.success) { toast(res.message, 'error'); return; }
   const b = res.data;
+  const editAction = CURRENT_USER && CURRENT_USER.role === 'admin'
+    ? `<button class="btn-sm primary" onclick="editBeneficiary(${Number(id)})">Edit details</button>`
+    : '';
   showModal('Beneficiary Details', `
     <p><b>Name:</b> ${escapeHtml(b.FirstName)} ${escapeHtml(b.LastName)}</p>
     <p><b>Age:</b> ${escapeHtml(b.Age || '-')}</p>
@@ -983,7 +1008,69 @@ async function viewBeneficiary(id) {
     <p><b>Status:</b> ${escapeHtml(b.Status)}</p>
     <p><b>Registered:</b> ${escapeHtml(b.RegistrationDate)}</p>
     <p><b>Notes:</b> ${escapeHtml(b.Notes || '-')}</p>
+    <div class="flex-row mt-8">${editAction}<button class="btn-sm" onclick="closeModal()">Close</button></div>
   `);
+}
+
+async function editBeneficiary(id) {
+  if (!CURRENT_USER || CURRENT_USER.role !== 'admin') {
+    toast('Only administrators can edit beneficiary details', 'error');
+    return;
+  }
+
+  try {
+    const res = await api('GET', 'beneficiaries/' + id);
+    if (!res.success) { toast(res.message, 'error'); return; }
+    const b = res.data;
+    const registrationDate = String(b.RegistrationDate || '').slice(0, 10);
+    const gender = String(b.Gender || '');
+    const status = String(b.Status || 'active');
+
+    showModal('Edit Beneficiary', `
+      <form onsubmit="event.preventDefault(); saveBeneficiary(${Number(id)})">
+        <div class="form-group"><label for="edit-ben-first-name">First name *</label><input id="edit-ben-first-name" type="text" value="${escapeHtml(b.FirstName)}" required></div>
+        <div class="form-group"><label for="edit-ben-last-name">Last name *</label><input id="edit-ben-last-name" type="text" value="${escapeHtml(b.LastName)}" required></div>
+        <div class="form-group"><label for="edit-ben-age">Age</label><input id="edit-ben-age" type="number" min="0" max="120" value="${escapeHtml(b.Age ?? '')}"></div>
+        <div class="form-group"><label for="edit-ben-gender">Gender</label><select id="edit-ben-gender"><option value="">Not specified</option><option value="Male" ${gender === 'Male' ? 'selected' : ''}>Male</option><option value="Female" ${gender === 'Female' ? 'selected' : ''}>Female</option><option value="Other" ${gender === 'Other' ? 'selected' : ''}>Other</option></select></div>
+        <div class="form-group"><label for="edit-ben-phone">Phone</label><input id="edit-ben-phone" type="tel" value="${escapeHtml(b.Phone || '')}"></div>
+        <div class="form-group"><label for="edit-ben-email">Email</label><input id="edit-ben-email" type="email" value="${escapeHtml(b.Email || '')}"></div>
+        <div class="form-group"><label for="edit-ben-address">Address</label><textarea id="edit-ben-address">${escapeHtml(b.Address || '')}</textarea></div>
+        <div class="form-group"><label for="edit-ben-registration-date">Registration date *</label><input id="edit-ben-registration-date" type="date" value="${escapeHtml(registrationDate)}" required></div>
+        <div class="form-group"><label for="edit-ben-status">Status *</label><select id="edit-ben-status" required><option value="active" ${status === 'active' ? 'selected' : ''}>Active</option><option value="inactive" ${status === 'inactive' ? 'selected' : ''}>Inactive</option><option value="suspended" ${status === 'suspended' ? 'selected' : ''}>Suspended</option></select></div>
+        <div class="form-group"><label for="edit-ben-notes">Notes</label><textarea id="edit-ben-notes">${escapeHtml(b.Notes || '')}</textarea></div>
+        <div class="flex-row mt-8"><button class="btn-sm primary" type="submit">Save changes</button><button class="btn-sm" type="button" onclick="viewBeneficiary(${Number(id)})">Cancel</button></div>
+      </form>
+    `);
+  } catch (e) {
+    toast('Failed to load beneficiary details', 'error');
+  }
+}
+
+async function saveBeneficiary(id) {
+  const data = {
+    first_name: document.getElementById('edit-ben-first-name').value.trim(),
+    last_name: document.getElementById('edit-ben-last-name').value.trim(),
+    age: document.getElementById('edit-ben-age').value || null,
+    gender: document.getElementById('edit-ben-gender').value || null,
+    phone: document.getElementById('edit-ben-phone').value.trim() || null,
+    email: document.getElementById('edit-ben-email').value.trim() || null,
+    address: document.getElementById('edit-ben-address').value.trim() || null,
+    registration_date: document.getElementById('edit-ben-registration-date').value,
+    status: document.getElementById('edit-ben-status').value,
+    notes: document.getElementById('edit-ben-notes').value.trim() || null
+  };
+
+  if (!data.first_name || !data.last_name || !data.registration_date) {
+    toast('First name, last name, and registration date are required', 'error');
+    return;
+  }
+
+  const res = await api('PUT', 'beneficiaries/' + id, data);
+  if (!res.success) { toast(res.message, 'error'); return; }
+
+  closeModal();
+  toast('Beneficiary details updated', 'success');
+  loadBeneficiaries();
 }
 
 async function registerBeneficiary() {
@@ -1084,18 +1171,30 @@ async function saveAttendance() {
 }
 
 async function loadAttendanceHistory() {
-  document.getElementById('att-history-loading').style.display = 'block';
-  document.getElementById('att-history-table').style.display = 'none';
+  const loading = document.getElementById('att-history-loading');
+  const message = document.getElementById('att-history-message');
+  const table = document.getElementById('att-history-table');
+  loading.style.display = 'block';
+  message.style.display = 'none';
+  message.textContent = '';
+  table.style.display = 'none';
   try {
     const res = await api('GET', 'attendance/history?days=14');
-    if (!res.success) return;
-    const data = res.data || [];
-    document.getElementById('att-history-loading').style.display = 'none';
-    if (data.length === 0) {
-      document.querySelector('#att-history .card').innerHTML += '<p class="text-muted">No history yet</p>';
+    loading.style.display = 'none';
+    if (!res.success) {
+      message.textContent = res.message || 'Attendance history could not be loaded.';
+      message.style.display = 'block';
       return;
     }
-    document.getElementById('att-history-table').style.display = 'table';
+
+    const data = Array.isArray(res.data) ? res.data : [];
+    if (data.length === 0) {
+      message.textContent = 'No attendance history is available for the selected period.';
+      message.style.display = 'block';
+      return;
+    }
+
+    table.style.display = 'table';
     document.getElementById('att-history-tbody').innerHTML = data.map(d => `
       <tr>
         <td>${escapeHtml(d.SessionDate)}</td>
@@ -1104,7 +1203,12 @@ async function loadAttendanceHistory() {
         <td><span class="badge badge-success">${escapeHtml(d.percentage || 0)}%</span></td>
       </tr>
     `).join('');
-  } catch (e) { toast('Failed to load history', 'error'); }
+  } catch (e) {
+    loading.style.display = 'none';
+    message.textContent = 'Failed to load attendance history. Please try again.';
+    message.style.display = 'block';
+    toast('Failed to load history', 'error');
+  }
 }
 
 // ==================== FOOD STOCK ====================
@@ -1348,6 +1452,16 @@ let lastReportData = null;
 let lastReportKeys = null;
 let lastReportType = null;
 
+function formatReportColumnLabel(key) {
+  const words = String(key)
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return words.replace(/\b\w/g, letter => letter.toUpperCase()).replace(/\bId\b/g, 'ID');
+}
+
 async function loadReport() {
   const type = document.getElementById('rpt-type').value;
   const from = document.getElementById('rpt-from').value;
@@ -1390,7 +1504,8 @@ async function loadReport() {
       const keys = Object.keys(data[0]);
       lastReportKeys = keys;
       lastReportData = data;
-      html = '<table class="data-table"><thead><tr>' + keys.map(k => '<th>' + escapeHtml(k.replace(/_/g, ' ')) + '</th>').join('') + '</tr></thead><tbody>';
+      const scrollHint = keys.length > 4 ? '<p class="text-muted report-scroll-hint">Swipe horizontally to view all report columns.</p>' : '';
+      html = scrollHint + '<table class="data-table report-data-table" aria-label="' + escapeHtml(formatReportColumnLabel(type)) + ' report"><thead><tr>' + keys.map(k => '<th scope="col">' + escapeHtml(formatReportColumnLabel(k)) + '</th>').join('') + '</tr></thead><tbody>';
       data.forEach(row => {
         html += '<tr>' + keys.map(k => '<td>' + escapeHtml(row[k] ?? '-') + '</td>').join('') + '</tr>';
       });
