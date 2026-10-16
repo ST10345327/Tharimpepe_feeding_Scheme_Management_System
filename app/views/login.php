@@ -267,13 +267,13 @@
         <!-- Keep this carousel image-led while retaining the organization logo and name. -->
         <section class="login-mission" aria-label="Tharimpepe community stories" data-login-carousel>
             <div class="login-slide is-active" data-slide aria-hidden="false">
-                <img src="/assets/images/login-carousel/community.svg" alt="Illustration of community members sharing a meal" fetchpriority="high">
+                <img src="/assets/images/login-carousel/catering.jpeg" alt="Community volunteers preparing fresh vegetables together" fetchpriority="high">
             </div>
             <div class="login-slide" data-slide aria-hidden="true">
-                <img src="/assets/images/login-carousel/meals.svg" alt="Illustration of a nutritious meal prepared for the community" loading="lazy">
+                <img src="/assets/images/login-carousel/donation.jpeg" alt="A volunteer handing a grocery parcel to a community member" loading="lazy">
             </div>
             <div class="login-slide" data-slide aria-hidden="true">
-                <img src="/assets/images/login-carousel/together.svg" alt="Illustration of volunteers preparing food together" loading="lazy">
+                <img src="/assets/images/login-carousel/serving.jpg" alt="School children sharing a meal outdoors" loading="lazy">
             </div>
             <div class="login-mission-brand" aria-hidden="true">
                 <img src="/assets/images/fsmslogo.png" alt="" width="58" height="44">
