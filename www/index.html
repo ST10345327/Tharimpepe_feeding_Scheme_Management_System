@@ -487,7 +487,7 @@
           <div class="rpt-actions" id="rpt-actions">
             <button class="btn-sm primary" onclick="printReport()">Print</button>
             <button class="btn-sm" onclick="exportCsv()">Export CSV</button>
-            <button class="btn-sm" onclick="exportXls()">Export XLS</button>
+            <button class="btn-sm" onclick="exportXls()">Export CSV (Excel compatible)</button>
           </div>
           <div class="rpt-table-wrap" id="rpt-table-wrap"></div>
         </div>
@@ -620,6 +620,18 @@ function toast(msg, type) {
   setTimeout(() => el.style.display = 'none', 3000);
 }
 
+function clearLoginCredentials() {
+  // Credentials are only needed for the sign-in request; never leave them in the form afterward.
+  ['login-user', 'login-pass'].forEach(id => {
+    const field = document.getElementById(id);
+    if (field) {
+      field.value = '';
+      field.defaultValue = '';
+      field.removeAttribute('value');
+    }
+  });
+}
+
 function getApiUrl() {
   const base = API_BASE.replace(/\/+$/, '');
   return base;
@@ -692,6 +704,7 @@ async function doLogin() {
       document.getElementById('app-view').classList.add('active');
       document.getElementById('drawer-name').textContent = CURRENT_USER.username;
       document.getElementById('drawer-role').textContent = CURRENT_USER.role + ' • FSMS';
+      clearLoginCredentials();
       loadDashboard();
     } else {
       errEl.textContent = res.message;
@@ -715,6 +728,7 @@ async function doLogout() {
     localStorage.removeItem('fsms_user');
     AUTH_TOKEN = '';
     CURRENT_USER = null;
+    clearLoginCredentials();
     document.getElementById('app-view').classList.remove('active');
     document.getElementById('login-view').classList.add('active');
     toggleDrawer();
@@ -1488,14 +1502,19 @@ async function loadReport() {
 
     let html = '';
     if (!Array.isArray(data)) {
+      // Flatten grouped summaries so CSV exports work for summary reports too.
+      lastReportKeys = ['section', 'item', 'value'];
+      lastReportData = [];
       html = '<table class="data-table"><tbody>';
       Object.entries(data).forEach(([key, val]) => {
         if (val && typeof val === 'object') {
           html += `<tr><td colspan="2"><b>${escapeHtml(key)}</b></td></tr>`;
           Object.entries(val).forEach(([k, v]) => {
+            lastReportData.push({ section: key, item: k, value: v ?? '' });
             html += `<tr><td style="padding-left:16px;">${escapeHtml(k)}</td><td><b>${escapeHtml(v ?? '-')}</b></td></tr>`;
           });
         } else {
+          lastReportData.push({ section: '', item: key, value: val ?? '' });
           html += `<tr><td>${escapeHtml(key)}</td><td><b>${escapeHtml(val ?? '-')}</b></td></tr>`;
         }
       });
@@ -1521,39 +1540,61 @@ function printReport() {
   window.print();
 }
 
-function exportCsv() {
+async function saveReportExport(blob, fileName, mimeType) {
+  const capacitor = window.Capacitor;
+  if (capacitor?.isNativePlatform?.()) {
+    // Native Android WebViews do not save Blob links, so write through the Downloads plugin.
+    const reportExport = capacitor.Plugins?.ReportExport ||
+      (typeof capacitor.registerPlugin === 'function' ? capacitor.registerPlugin('ReportExport') : null);
+    if (!reportExport?.saveFile) {
+      throw new Error('The Android report saver is unavailable. Rebuild and reinstall the app.');
+    }
+    const fileReader = new FileReader();
+    const encodedData = await new Promise((resolve, reject) => {
+      fileReader.onload = () => resolve(String(fileReader.result).split(',')[1] || '');
+      fileReader.onerror = () => reject(new Error('Could not prepare the report file.'));
+      fileReader.readAsDataURL(blob);
+    });
+    const savedFile = await reportExport.saveFile({ fileName, mimeType, data: encodedData });
+    toast('Report saved to ' + (savedFile.location || 'Downloads'), 'success');
+    return;
+  }
+
+  // Desktop browsers handle Blob URLs directly; keep the URL alive through the download click.
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  toast('Report download started: ' + fileName, 'success');
+}
+
+async function exportCsv() {
   if (!lastReportData || !lastReportKeys) {
     toast('No table data to export. Generate a list-type report first.', 'error');
     return;
   }
-  const rows = [lastReportKeys.join(',')];
-  lastReportData.forEach(row => {
-    rows.push(lastReportKeys.map(k => {
-      const val = row[k] ?? '';
-      const s = String(val);
-      return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
-    }).join(','));
-  });
-  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = (lastReportType || 'report') + '_report.csv';
-  link.click();
-  URL.revokeObjectURL(link.href);
-  toast('Report exported as CSV', 'success');
+  try {
+    // Quote every value so commas, quotes, and line breaks remain valid CSV cells.
+    const toCsvCell = value => '"' + String(value ?? '').replace(/"/g, '""') + '"';
+    const rows = [lastReportKeys.map(formatReportColumnLabel).map(toCsvCell).join(',')];
+    lastReportData.forEach(row => {
+      rows.push(lastReportKeys.map(key => toCsvCell(row[key])).join(','));
+    });
+    // The UTF-8 BOM helps spreadsheet apps detect names and text correctly.
+    const blob = new Blob(['\uFEFF' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    await saveReportExport(blob, (lastReportType || 'report') + '_report.csv', 'text/csv');
+  } catch (error) {
+    toast(error.message || 'Could not save the CSV report', 'error');
+  }
 }
 
-function exportXls() {
-  const table = document.querySelector('#rpt-table-wrap table');
-  if (!table) { toast('Generate a report before exporting', 'error'); return; }
-  const html = '<html><head><meta charset="UTF-8"></head><body>' + table.outerHTML + '</body></html>';
-  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = (lastReportType || 'report') + '_report.xls';
-  link.click();
-  URL.revokeObjectURL(link.href);
-  toast('Report exported as XLS', 'success');
+async function exportXls() {
+  // CSV is a standards-based format that mobile spreadsheet apps can parse consistently.
+  await exportCsv();
 }
 
 // ==================== USERS & PROFILE ====================
