@@ -5,4 +5,12 @@
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="false">192.168.18.73</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <!-- Trust the local development CA only for the FSMS LAN API host. -->
+            <certificates src="@raw/fsms_local_dev_ca" />
+        </trust-anchors>
+    </domain-config>
 </network-security-config>
