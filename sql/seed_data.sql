@@ -2,9 +2,9 @@
 -- Tharimpepe Feeding Scheme Management System (FSMS)
 -- Development / Demo Seed Data
 -- ============================================================
--- Prerequisite:
---   1. Run sql/schema.sql first.
---   2. This script is intended for local development/demo use.
+-- This script is intended for local development/demo use.
+-- It targets the existing project schema and does not create, alter,
+-- drop, or delete tables or columns.
 --
 -- Notes:
 --   * No existing rows are deleted.
@@ -48,9 +48,8 @@ ON DUPLICATE KEY UPDATE Username = Username;
 -- 2. VOLUNTEERS
 -- ------------------------------------------------------------
 INSERT INTO Volunteers
-    (UserID, FirstName, LastName, Phone, Address, AvailabilityStatus)
-SELECT u.UserID, 'Kagiso', 'Molefe', '0710000002',
-       'Tharimpepe Community, Gauteng', 'available'
+    (UserID, Address, AvailabilityStatus)
+SELECT u.UserID, 'Tharimpepe Community, Gauteng', 'available'
 FROM Users u
 WHERE u.Username = 'demo_volunteer1'
   AND NOT EXISTS (
@@ -58,9 +57,8 @@ WHERE u.Username = 'demo_volunteer1'
   );
 
 INSERT INTO Volunteers
-    (UserID, FirstName, LastName, Phone, Address, AvailabilityStatus)
-SELECT u.UserID, 'Naledi', 'Mokoena', '0710000003',
-       'Tharimpepe Community, Gauteng', 'available'
+    (UserID, Address, AvailabilityStatus)
+SELECT u.UserID, 'Tharimpepe Community, Gauteng', 'available'
 FROM Users u
 WHERE u.Username = 'demo_volunteer2'
   AND NOT EXISTS (
@@ -143,19 +141,45 @@ WHERE NOT EXISTS (
 -- ------------------------------------------------------------
 -- 4. MEAL SESSIONS
 -- ------------------------------------------------------------
-INSERT INTO MealSession
-    (SessionDate, SessionType, Location, Notes)
-VALUES
-    ('2026-09-01', 'Lunch', 'Tharimpepe Community Hall',
-     'Community lunch service.'),
-    ('2026-09-03', 'Lunch', 'Tharimpepe Community Hall',
-     'Community lunch service.'),
-    ('2026-09-05', 'Lunch', 'Tharimpepe Community Hall',
-     'Saturday meal distribution.'),
-    ('2026-09-08', 'Lunch', 'Tharimpepe Community Hall',
-     'Regular feeding programme session.')
-ON DUPLICATE KEY UPDATE
-    Notes = VALUES(Notes);
+INSERT INTO MealSession (SessionDate, SessionType, Location, Notes)
+SELECT '2026-09-01', 'Lunch', 'Tharimpepe Community Hall',
+       'Community lunch service.'
+WHERE NOT EXISTS (
+    SELECT 1 FROM MealSession
+    WHERE SessionDate = '2026-09-01'
+      AND SessionType = 'Lunch'
+      AND Location = 'Tharimpepe Community Hall'
+);
+
+INSERT INTO MealSession (SessionDate, SessionType, Location, Notes)
+SELECT '2026-09-03', 'Lunch', 'Tharimpepe Community Hall',
+       'Community lunch service.'
+WHERE NOT EXISTS (
+    SELECT 1 FROM MealSession
+    WHERE SessionDate = '2026-09-03'
+      AND SessionType = 'Lunch'
+      AND Location = 'Tharimpepe Community Hall'
+);
+
+INSERT INTO MealSession (SessionDate, SessionType, Location, Notes)
+SELECT '2026-09-05', 'Lunch', 'Tharimpepe Community Hall',
+       'Saturday meal distribution.'
+WHERE NOT EXISTS (
+    SELECT 1 FROM MealSession
+    WHERE SessionDate = '2026-09-05'
+      AND SessionType = 'Lunch'
+      AND Location = 'Tharimpepe Community Hall'
+);
+
+INSERT INTO MealSession (SessionDate, SessionType, Location, Notes)
+SELECT '2026-09-08', 'Lunch', 'Tharimpepe Community Hall',
+       'Regular feeding programme session.'
+WHERE NOT EXISTS (
+    SELECT 1 FROM MealSession
+    WHERE SessionDate = '2026-09-08'
+      AND SessionType = 'Lunch'
+      AND Location = 'Tharimpepe Community Hall'
+);
 
 -- ------------------------------------------------------------
 -- 5. ATTENDANCE
@@ -415,43 +439,8 @@ WHERE u.Username = 'demo_volunteer2'
   );
 
 -- ------------------------------------------------------------
--- 9. VOLUNTEER AVAILABILITY
--- ------------------------------------------------------------
-INSERT INTO VolunteerAvailability (VolunteerID, DayOfWeek, IsAvailable, Notes)
-SELECT v.VolunteerID, 'Monday', 1, 'Available for morning shifts'
-FROM Volunteers v
-JOIN Users u ON u.UserID = v.UserID
-WHERE u.Username = 'demo_volunteer1'
-ON DUPLICATE KEY UPDATE
-    IsAvailable = VALUES(IsAvailable),
-    Notes = VALUES(Notes);
-
-INSERT INTO VolunteerAvailability (VolunteerID, DayOfWeek, IsAvailable, Notes)
-SELECT v.VolunteerID, 'Wednesday', 1, 'Available for meal service'
-FROM Volunteers v
-JOIN Users u ON u.UserID = v.UserID
-WHERE u.Username = 'demo_volunteer1'
-ON DUPLICATE KEY UPDATE
-    IsAvailable = VALUES(IsAvailable),
-    Notes = VALUES(Notes);
-
-INSERT INTO VolunteerAvailability (VolunteerID, DayOfWeek, IsAvailable, Notes)
-SELECT v.VolunteerID, 'Friday', 1, 'Available for preparation and serving'
-FROM Volunteers v
-JOIN Users u ON u.UserID = v.UserID
-WHERE u.Username = 'demo_volunteer2'
-ON DUPLICATE KEY UPDATE
-    IsAvailable = VALUES(IsAvailable),
-    Notes = VALUES(Notes);
-
-INSERT INTO VolunteerAvailability (VolunteerID, DayOfWeek, IsAvailable, Notes)
-SELECT v.VolunteerID, 'Saturday', 1, 'Available for community meal service'
-FROM Volunteers v
-JOIN Users u ON u.UserID = v.UserID
-WHERE u.Username = 'demo_volunteer2'
-ON DUPLICATE KEY UPDATE
-    IsAvailable = VALUES(IsAvailable),
-    Notes = VALUES(Notes);
+-- The current database does not contain a VolunteerAvailability table,
+-- so availability is represented by Volunteers.AvailabilityStatus only.
 
 -- ------------------------------------------------------------
 -- 10. MESSAGES
@@ -514,7 +503,7 @@ INSERT INTO BlogPosts
     (Title, Content, AuthorID, PublishDate)
 SELECT 'Tharimpepe Feeding Scheme Community Update',
        'The feeding scheme continues to coordinate meal services, volunteers and food resources for the community.',
-       u.UserID, '2026-08-30 09:00:00'
+       u.UserID, '2026-08-30'
 FROM Users u
 WHERE u.Username = 'demo_admin'
   AND NOT EXISTS (
@@ -526,7 +515,7 @@ INSERT INTO BlogPosts
     (Title, Content, AuthorID, PublishDate)
 SELECT 'Volunteer Programme Update',
        'Volunteer schedules are being coordinated to support meal preparation and distribution activities.',
-       u.UserID, '2026-09-02 10:00:00'
+       u.UserID, '2026-09-02'
 FROM Users u
 WHERE u.Username = 'demo_admin'
   AND NOT EXISTS (
@@ -538,7 +527,7 @@ INSERT INTO BlogPosts
     (Title, Content, AuthorID, PublishDate)
 SELECT 'Community Food Support',
        'Recent donations have helped maintain food and serving supplies for upcoming meal sessions.',
-       u.UserID, '2026-09-06 11:00:00'
+       u.UserID, '2026-09-06'
 FROM Users u
 WHERE u.Username = 'demo_admin'
   AND NOT EXISTS (
