@@ -5,7 +5,7 @@ const FSMS_API_BASE = (() => {
     const configured = window.FSMS_API_BASE_URL || '';
 
     if (isNative) {
-        const apiBase = configured || 'https://192.168.18.73:8443/api';
+        const apiBase = configured || 'http://192.168.18.73:8080/api';
         if (!/^https:\/\//i.test(apiBase)) {
             throw new Error('Android API URL must use HTTPS. Configure window.FSMS_API_BASE_URL.');
         }
