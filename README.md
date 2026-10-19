@@ -22,6 +22,7 @@ Quick start: see [GETTING_STARTED.md](GETTING_STARTED.md) for a minimal, copy-pa
 **Demo video:** 
 - Website: https://youtu.be/vvwGJumiVZw
 - Mobile App: https://youtu.be/GrrGO9rQQq0
+- Additional demo: https://youtube.com/shorts/jrbG3rI063A
 
 ## Stack
 
