@@ -6,8 +6,8 @@ echo ============================================
 echo.
 echo  Web App:  http://localhost:8080
 echo  API:      http://localhost:8080/api
-echo  Android:  http://10.0.2.2:8080/api
-echo  Phone:  http://192.168.18.73:8080/api
+echo  Android:  https://192.168.18.73/api
+echo  Phone:  https://192.168.18.73/api
 echo  Press Ctrl+C to stop the server
 echo ============================================
 echo.

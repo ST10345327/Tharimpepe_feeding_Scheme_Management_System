@@ -5,8 +5,8 @@ const FSMS_API_BASE = (() => {
     const configured = window.FSMS_API_BASE_URL || '';
 
     if (isNative) {
-        // The local HTTPS proxy bridges the phone to the PHP development server.
-        const apiBase = configured || 'https://192.168.18.73:8080/api';
+        // XAMPP Apache serves the LAN API over HTTPS on its default port 443.
+        const apiBase = configured || 'https://192.168.18.73/api';
         if (!/^https:\/\//i.test(apiBase)) {
             throw new Error('Android API URL must use HTTPS. Configure window.FSMS_API_BASE_URL.');
         }
