@@ -34,9 +34,8 @@ class MobileBusinessLogicSimpleTest extends DatabaseTestCase
             PasswordHash TEXT NOT NULL,
             FullName TEXT,
             Phone TEXT,
-            Role TEXT DEFAULT \"volunteer\",
-            Status TEXT DEFAULT \"pending\",
-            CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            Role TEXT DEFAULT 'volunteer',
+            Status TEXT DEFAULT 'pending'
         );");
         $conn->exec("CREATE TABLE IF NOT EXISTS Beneficiaries (
             BeneficiaryID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,7 +47,7 @@ class MobileBusinessLogicSimpleTest extends DatabaseTestCase
             Email TEXT,
             Address TEXT,
             RegistrationDate TEXT NOT NULL,
-            Status TEXT DEFAULT \"active\",
+            Status TEXT DEFAULT 'active',
             Notes TEXT
         );");
         $conn->exec("CREATE TABLE IF NOT EXISTS MealSession (
@@ -56,17 +55,15 @@ class MobileBusinessLogicSimpleTest extends DatabaseTestCase
             SessionDate TEXT NOT NULL,
             SessionType TEXT NOT NULL,
             Location TEXT,
-            Notes TEXT,
-            CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            Notes TEXT
         );");
         $conn->exec("CREATE TABLE IF NOT EXISTS Attendance (
             AttendanceID INTEGER PRIMARY KEY AUTOINCREMENT,
             BeneficiaryID INTEGER NOT NULL,
             MealSessionID INTEGER,
             SessionDate TEXT NOT NULL,
-            Status TEXT DEFAULT \"present\",
-            Notes TEXT,
-            CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            Status TEXT DEFAULT 'present',
+            Notes TEXT
         );");
         $conn->exec("CREATE TABLE IF NOT EXISTS FoodStock (
             StockID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,9 +72,7 @@ class MobileBusinessLogicSimpleTest extends DatabaseTestCase
             Unit TEXT NOT NULL,
             ExpiryDate TEXT,
             StockDate TEXT NOT NULL,
-            Notes TEXT,
-            CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
-            UpdatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            Notes TEXT
         );");
         $conn->exec("CREATE TABLE IF NOT EXISTS Donations (
             DonationID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,8 +81,7 @@ class MobileBusinessLogicSimpleTest extends DatabaseTestCase
             DonationType TEXT NOT NULL,
             Amount REAL,
             Description TEXT,
-            DonationDate TEXT NOT NULL,
-            CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            DonationDate TEXT NOT NULL
         );");
         $conn->exec("CREATE TABLE IF NOT EXISTS Volunteers (
             VolunteerID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,8 +90,7 @@ class MobileBusinessLogicSimpleTest extends DatabaseTestCase
             LastName TEXT NOT NULL,
             Phone TEXT,
             Address TEXT,
-            AvailabilityStatus TEXT DEFAULT \"available\",
-            CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            AvailabilityStatus TEXT DEFAULT 'available'
         );");
         $this->beneficiaryModel = new Beneficiary($conn);
         $this->attendanceModel = new Attendance($conn);
@@ -121,4 +114,3 @@ class MobileBusinessLogicSimpleTest extends DatabaseTestCase
         $this->assertNotNull($all);
     }
 }
-
