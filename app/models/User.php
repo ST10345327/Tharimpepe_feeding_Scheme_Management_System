@@ -115,10 +115,7 @@ class User
             throw new Exception("Invalid email format");
         }
 
-        // Validation: Password strength (minimum 6 characters)
-        if (strlen($password) < 6) {
-            throw new Exception("Password must be at least 6 characters");
-        }
+        $this->validatePasswordStrength($password);
 
         // Hash password using PHP password_hash (bcrypt)
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
@@ -228,10 +225,7 @@ class User
      */
     public function changePassword($userId, $newPassword)
     {
-        // Validation: Password strength
-        if (strlen($newPassword) < 6) {
-            throw new Exception("Password must be at least 6 characters");
-        }
+        $this->validatePasswordStrength($newPassword);
 
         // Hash new password
         $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
@@ -271,6 +265,13 @@ class User
                 $this->conn->rollBack();
             }
             throw $e;
+        }
+    }
+
+    private function validatePasswordStrength($password)
+    {
+        if (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[0-9]/', $password)) {
+            throw new Exception('Password must be at least 8 characters and include an uppercase letter and a number');
         }
     }
 }

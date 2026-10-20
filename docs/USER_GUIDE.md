@@ -1,62 +1,81 @@
-# Tharimpepe Feeding Scheme Management System — User Guide
+# Tharimpepe Feeding Scheme Management System
 
-This guide covers the website and Android app for staff and volunteers managing the feeding scheme. Screens and available actions depend on the signed-in user's role.
+## User Guide
+
+This guide covers the FSMS website and Android app. The screens and actions available to you depend on your account role. The Android app and website use the same server data when connected to the configured API.
+
+## Contents
+
+1. [Getting started](#getting-started)
+2. [Sign in and account access](#sign-in-and-account-access)
+3. [Dashboard and navigation](#dashboard-and-navigation)
+4. [Beneficiaries](#beneficiaries)
+5. [Attendance](#attendance)
+6. [Food stock](#food-stock)
+7. [Donations](#donations)
+8. [Volunteers and schedules](#volunteers-and-schedules)
+9. [Reports](#reports)
+10. [Users and profile](#users-and-profile)
+11. [Troubleshooting and privacy](#troubleshooting-and-privacy)
 
 ## Getting started
 
-1. Open the website or launch the Android app.
-2. Sign in with an account provided by the system administrator. New registrations may need administrator approval before sign-in.
-3. Use the dashboard to review current activity. Use the navigation menu to open the modules available to your account.
-4. Sign out when you finish, especially on a shared device.
+For local setup and installation, follow [GETTING_STARTED.md](../GETTING_STARTED.md). The system needs a running PHP application/API and configured database. On Android, the device must be able to reach the API address configured for that build.
 
-If sign-in fails, check the username and password, confirm that the account is active, and contact the administrator. Do not share passwords.
+Open the website URL provided by your administrator, or launch the installed FSMS Android app. Use an account supplied or approved by the administrator. Sign out when finished, especially on a shared device.
 
-## Main modules
+## Sign in and account access
 
-### Beneficiaries
+Enter your username and password on the sign-in screen and select **Login**. If you do not have an account, use **Create one** where available or ask the administrator to create an account. Registration options can vary between the website and Android app; a newly registered account may need approval or activation before it can sign in.
 
-Use this module to view and register people who receive meals. Enter accurate details, then save the record. Use the list's search and filters to find a person. Update a record when details or status change. Only collect personal information needed by the feeding scheme.
+The sign-in screen also offers **Quick Donate as Guest** for a one-time donation without signing in. This does not create a staff or volunteer account.
 
-### Attendance
+If you cannot sign in, check your username and password and ask the administrator to confirm that your account is active. The app does not show a third-party Google or Microsoft sign-in option.
 
-Choose the meal date/session, mark each beneficiary's attendance, and save the record. Review the daily summary or attendance history to correct mistakes and confirm totals. Avoid recording attendance twice for the same person and session.
+## Dashboard and navigation
 
-### Food stock
+After signing in, use the dashboard to review the operational summaries available to your role. Use the website sidebar or Android navigation drawer/bottom navigation to open modules. On smaller website screens, open the menu with the menu button.
 
-Add inventory items with their name, quantity, unit, and relevant dates. Update quantities when stock is received or distributed. Check low-stock and expiry information before planning meals.
+Available modules include beneficiaries, attendance, food stock, donations, volunteers, reports, and profile. User administration is restricted to administrators. Some actions are further restricted by role.
 
-### Donations
+## Beneficiaries
 
-Record the donor, donation type, date, and amount or item details. Review the donation list and receipt/report screens to confirm the entry. Keep descriptions factual and do not store payment card details.
+Open **Beneficiaries** to view and search records. Use the registration form to add a beneficiary, enter the required details, and save. Open a record to review or update it if your role permits. Enter accurate information and collect only details needed by the feeding scheme.
 
-### Volunteers
+## Attendance
 
-Register or update volunteer details and availability. Where schedules are available, review the assigned date, time, and location and update the shift status after service.
+Open **Attendance**, choose the meal date or session, and load the beneficiary list. Mark each person's attendance status, review the entries, and save. Use the attendance list, daily summary, or report screens to review saved records. Check the date and session before saving to avoid duplicate or incorrect entries.
 
-### Reports
+## Food stock
 
-Choose the report that matches the question, review its date range and filters, then print or export when those actions are available. Treat exports as confidential because they may contain personal or operational information.
+Open **Food Stock** to review inventory. Use the add or edit actions available to your role to record an item's name, quantity, unit, and relevant dates. Update quantities when stock is received or distributed. Check low-stock and expiry views when planning meals.
 
-### Profile and account access
+## Donations
 
-Use profile/account options to review your details or change your password if the screen provides that action. Ask an administrator to resolve account status or role problems.
+Open **Donations** to review recorded donations or enter a new one if your role allows it. Provide the donor and donation details requested by the form, then save and review the resulting record or receipt where available. The sign-in screen's guest donation option is available for one-time donations. Do not enter payment card details.
 
-## Android app notes
+## Volunteers and schedules
 
-The Android app uses the same system account and server data as the website. The app must be able to reach the configured API server. If lists fail to load, first check the device's network connection and ask the administrator whether the service is running and the device is on the supported network.
+Open **Volunteers** to search, view, or register volunteer records where your role permits. Use **Schedules** or availability screens, if available to your account, to review or update assigned shifts and availability. Confirm dates and times before saving changes.
 
-## Common problems
+## Reports
+
+Open **Reports** and choose the report relevant to your work. Set any requested filters or date range, then generate the report. Available report types and actions depend on the website or app version and your role. Use the displayed **Print** or **Export CSV** action when it is available. Treat downloaded reports as confidential because they may contain personal or operational data.
+
+## Users and profile
+
+Administrators can open **Users** to review accounts and, where permitted, create users, update roles/status, or deactivate access. Do not change another user's access unless authorized.
+
+Open **My Profile** to review your account information. If profile editing or password change is available, follow the form instructions and save the change. Contact the administrator if you need an account activation, role, or password reset. Never share your password.
+
+## Troubleshooting and privacy
 
 | Problem | What to try |
 |---|---|
-| Account is pending or inactive | Ask an administrator to review the account. |
-| A page or action is missing | Your role may not have access; ask the administrator to confirm your permissions. |
-| Data does not load in Android | Check connectivity and contact the administrator about server availability. |
-| A saved record looks wrong | Reopen it and correct it if permitted; otherwise report the record, screen, and date to an administrator. |
-| You find a software problem | Record the screen, steps to reproduce, expected result, actual result, and (if safe) a screenshot. Do not include passwords or sensitive beneficiary data in issue reports. |
+| Sign-in is rejected | Check the username and password; ask the administrator to confirm the account is active. |
+| A menu item or action is missing | Your role may not have access. Ask the administrator to check your permissions. |
+| Android cannot load or save data | Check the device connection and confirm the API server is running and reachable at the address configured for the app. |
+| A save fails or shows an error | Check required fields and input formats, retry once, and contact the administrator if the error continues. |
+| A record appears incorrect | Reopen and correct it if permitted; otherwise report the module, steps, and approximate time to the administrator. |
 
-## Support and privacy
-
-For access, data correction, or technical support, contact the feeding scheme administrator through the channel your organization has provided. Share the minimum information needed to describe the problem. Never send passwords, authentication tokens, or unnecessary beneficiary details.
-
-> This is an initial guide based on the repository's documented modules. Before submission, the team should walk through each instruction on the current website and Android build, add current screenshots, and correct any screen labels or steps that differ.
+When reporting an issue, do not include passwords, access tokens, or unnecessary beneficiary personal information. Share only the details needed to reproduce the problem.

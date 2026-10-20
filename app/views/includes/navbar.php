@@ -31,23 +31,25 @@ $navItems = rbacNavItemsForRole($role);
         <span class="fsms-brand-title">Feeding Scheme Management</span>
     </a>
 
-    <nav class="fsms-nav">
+    <nav class="fsms-nav" aria-label="Primary navigation">
         <?php foreach ($navItems as $item): ?>
             <?php $isActive = ($currentAction !== '' && strpos($currentAction, $item['match'] ?? '') !== false) ? 'active' : ''; ?>
             <a class="fsms-nav-link <?php echo $isActive; ?>"
-               href="<?php echo htmlspecialchars($item['href']); ?>">
+               href="<?php echo htmlspecialchars($item['href']); ?>"
+               aria-label="<?php echo htmlspecialchars($item['label']); ?>"
+               title="<?php echo htmlspecialchars($item['label']); ?>" <?php echo $isActive !== '' ? 'aria-current="page"' : ''; ?>>
                 <i class="fas <?php echo htmlspecialchars($item['icon']); ?>" aria-hidden="true"></i>
                 <span class="fsms-nav-text"><?php echo htmlspecialchars($item['label']); ?></span>
             </a>
         <?php endforeach; ?>
-
-        <div class="fsms-nav-bottom">
-            <a class="fsms-nav-link" href="/index.php?action=logout">
-                <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
-                <span class="fsms-nav-text">Logout</span>
-            </a>
-        </div>
     </nav>
+
+    <div class="fsms-nav-bottom">
+        <a class="fsms-nav-link" href="/index.php?action=logout" aria-label="Logout" title="Logout">
+            <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
+            <span class="fsms-nav-text">Logout</span>
+        </a>
+    </div>
 </aside>
 
 <!-- Offcanvas nav for small screens -->
@@ -57,18 +59,20 @@ $navItems = rbacNavItemsForRole($role);
         <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-        <nav class="fsms-nav offcanvas-nav">
+        <nav class="fsms-nav offcanvas-nav" aria-label="Mobile primary navigation">
             <?php foreach ($navItems as $item): ?>
                 <?php $isActive = ($currentAction !== '' && strpos($currentAction, $item['match'] ?? '') !== false) ? 'active' : ''; ?>
                 <a class="fsms-nav-link <?php echo $isActive; ?>"
-                   href="<?php echo htmlspecialchars($item['href']); ?>">
+                   href="<?php echo htmlspecialchars($item['href']); ?>"
+                   aria-label="<?php echo htmlspecialchars($item['label']); ?>"
+                   title="<?php echo htmlspecialchars($item['label']); ?>" <?php echo $isActive !== '' ? 'aria-current="page"' : ''; ?>>
                     <i class="fas <?php echo htmlspecialchars($item['icon']); ?>" aria-hidden="true"></i>
                     <span class="fsms-nav-text"><?php echo htmlspecialchars($item['label']); ?></span>
                 </a>
             <?php endforeach; ?>
 
             <div class="fsms-nav-bottom">
-                <a class="fsms-nav-link" href="/index.php?action=logout">
+                <a class="fsms-nav-link" href="/index.php?action=logout" aria-label="Logout" title="Logout">
                     <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>
                     <span class="fsms-nav-text">Logout</span>
                 </a>

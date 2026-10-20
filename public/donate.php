@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . '/../app/helpers/Security.php';
+requireHttpsTransport();
+?>
 <!doctype html>
 <html lang="en">
 <head>
