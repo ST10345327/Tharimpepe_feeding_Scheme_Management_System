@@ -8,6 +8,16 @@ function handleDonations($method, $id) {
 
     switch ($method) {
         case 'GET':
+            if (strtolower($user['Role']) === 'donor') {
+                if ($id) {
+                    $data = $model->getDonationById((int)$id);
+                    if (!$data || strcasecmp((string)($data['DonorEmail'] ?? ''), (string)$user['Email']) !== 0) {
+                        apiJsonResponse(false, 'Donation not found', null, 404);
+                    }
+                    apiJsonResponse(true, 'Donation retrieved', $data);
+                }
+                apiJsonResponse(true, 'Your donations retrieved', $model->getDonationsByEmail($user['Email']));
+            }
             requireApiRole($user, ['admin', 'staff', 'volunteer']);
             if ($id) {
                 $data = $model->getDonationById((int)$id);
@@ -44,6 +54,10 @@ function handleDonations($method, $id) {
 
         case 'POST':
             $input = getJsonInput();
+            if ($user && strtolower($user['Role']) === 'donor') {
+                $input['donor_email'] = $user['Email'];
+                $input['donor_name'] = $user['Username'];
+            }
             validateRequired($input, ['donor_name', 'donation_type', 'donation_date']);
 
             $result = $model->createDonation([

@@ -150,13 +150,25 @@ class AttendanceModelTest extends DatabaseTestCase
             BeneficiaryID INTEGER PRIMARY KEY AUTOINCREMENT,
             FirstName TEXT NOT NULL,
             LastName TEXT NOT NULL,
-            RegistrationDate TEXT NOT NULL
+            Age INTEGER,
+            Gender TEXT,
+            Phone TEXT,
+            Email TEXT,
+            Address TEXT,
+            RegistrationDate TEXT NOT NULL,
+            Status TEXT DEFAULT 'active',
+            Notes TEXT,
+            CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            UpdatedAt TEXT DEFAULT CURRENT_TIMESTAMP
         );");
 
         $this->getConnection()->exec("CREATE TABLE IF NOT EXISTS MealSession (
             MealSessionID INTEGER PRIMARY KEY AUTOINCREMENT,
             SessionDate TEXT NOT NULL,
-            SessionType TEXT NOT NULL
+            SessionType TEXT NOT NULL,
+            Location TEXT,
+            Notes TEXT,
+            CreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
         );");
 
         $this->getConnection()->exec("CREATE TABLE IF NOT EXISTS Attendance (

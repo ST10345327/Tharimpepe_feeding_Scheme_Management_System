@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../app/helpers/Security.php';
+requireHttpsTransport(true);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -81,7 +84,7 @@ function getAuthenticatedApiUser() {
     $tokenHash = hash('sha256', strtolower($matches[1]));
 
     $db = getDBConnection();
-    $stmt = $db->prepare("SELECT u.UserID, u.Username, u.Role, u.Status, t.TokenID AS ApiTokenID
+    $stmt = $db->prepare("SELECT u.UserID, u.Username, u.Email, u.Role, u.Status, t.TokenID AS ApiTokenID
                           FROM ApiTokens t
                           INNER JOIN Users u ON u.UserID = t.UserID
                           WHERE t.TokenHash = :token_hash
@@ -122,6 +125,57 @@ function createApiToken(PDO $db, $userId) {
 function revokeApiToken(PDO $db, $tokenId) {
     $stmt = $db->prepare('UPDATE ApiTokens SET RevokedAt = UTC_TIMESTAMP() WHERE TokenID = :token_id AND RevokedAt IS NULL');
     $stmt->execute([':token_id' => (int)$tokenId]);
+}
+
+/** Apply authorization to every routed API operation before dispatch. */
+function authorizeApiOperation($resource, $method, $id = null) {
+    $permissions = [
+        'logout' => ['POST' => ['admin', 'staff', 'volunteer', 'donor']],
+        'beneficiaries' => [
+            'GET' => ['admin', 'staff'], 'POST' => ['admin'], 'PUT' => ['admin'], 'DELETE' => ['admin'],
+        ],
+        'attendance' => [
+            'GET' => ['admin', 'staff', 'volunteer'], 'POST' => ['admin', 'staff', 'volunteer'],
+            'PUT' => ['admin', 'staff'], 'DELETE' => ['admin'],
+        ],
+        'stock' => [
+            'GET' => ['admin', 'staff', 'volunteer'], 'POST' => ['admin', 'staff'],
+            'PUT' => ['admin', 'staff'], 'DELETE' => ['admin'],
+        ],
+        'donations' => [
+            'GET' => ['admin', 'staff', 'volunteer', 'donor'],
+            'POST' => ['admin', 'staff', 'volunteer', 'donor'],
+            'PUT' => ['admin', 'staff', 'volunteer'], 'DELETE' => ['admin'],
+        ],
+        'volunteers' => [
+            'GET' => ['admin', 'staff'], 'POST' => ['admin', 'staff'],
+            'PUT' => ['admin', 'staff'], 'DELETE' => ['admin'],
+        ],
+        'dashboard' => ['GET' => ['admin', 'staff', 'volunteer']],
+        'reports' => ['GET' => ['admin', 'staff']],
+        'users' => [
+            'GET' => $id ? ['admin', 'staff', 'volunteer', 'donor'] : ['admin'],
+            'POST' => ['admin'], 'PUT' => ['admin', 'staff', 'volunteer', 'donor'],
+        ],
+        'mealsessions' => ['GET' => ['admin', 'staff', 'volunteer'], 'POST' => ['admin', 'staff']],
+    ];
+
+    if (!isset($permissions[$resource][$method])) {
+        apiJsonResponse(false, 'Method not allowed', null, 405);
+    }
+
+    // Donation submissions already support anonymous donors; authenticated donor identity is enforced in the handler.
+    if ($resource === 'donations' && $method === 'POST') {
+        return null;
+    }
+
+    $user = requireAuth();
+    if ($resource === 'users' && $id && $method !== 'POST'
+        && (int)$id !== (int)$user['UserID'] && strtolower($user['Role']) !== 'admin') {
+        apiJsonResponse(false, 'You do not have permission to perform this action', null, 403);
+    }
+    requireApiRole($user, $permissions[$resource][$method]);
+    return $user;
 }
 
 function validateRequired($data, $fields) {
