@@ -648,7 +648,7 @@
 <script src="js/config.js"></script>
 <script src="js/google-auth.js"></script>
 <script>
-var API_BASE = FSMS_API_BASE;
+var API_BASE = (typeof FSMS_API_BASE !== 'undefined' && FSMS_API_BASE) ? FSMS_API_BASE : 'https://metatron.tail89f605.ts.net/api';
 (() => {
   const carousel = document.querySelector('[data-login-carousel]');
   if (!carousel) return;
