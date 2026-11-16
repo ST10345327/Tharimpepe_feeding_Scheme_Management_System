@@ -154,8 +154,7 @@ function authorizeApiOperation($resource, $method, $id = null, $subresource = nu
         return null;
     }
 
-function authorizeApiOperation($resource, $method, $id = null) {
-    $permissions = [
+$permissions = [
         'logout' => ['POST' => ['admin', 'staff', 'volunteer', 'donor']],
         'beneficiaries' => [
             'GET' => ['admin', 'staff'], 'POST' => ['admin'], 'PUT' => ['admin'], 'DELETE' => ['admin'],
