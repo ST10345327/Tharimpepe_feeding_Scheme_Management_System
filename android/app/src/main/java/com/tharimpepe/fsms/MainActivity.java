@@ -7,6 +7,8 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(android.os.Bundle savedInstanceState) {
         registerPlugin(ReportExportPlugin.class);
         registerPlugin(GoogleAuthPlugin.class);
+        // Register the native file writer so report exports reach Android Downloads.
+        registerPlugin(ReportExportPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

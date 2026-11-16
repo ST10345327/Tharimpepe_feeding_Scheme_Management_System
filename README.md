@@ -113,6 +113,7 @@ The packaged Android app uses `https://192.168.18.73:8080/api`. The phone and co
 To use a different HTTPS API host (for example a private Tailscale Serve address), copy `www/js/config.local.example.js` to the ignored `www/js/config.local.js` and set `window.FSMS_API_BASE_URL`. Then run `npm run mobile:copy` and rebuild. The local configuration is included in the generated Android app bundle and should not be committed.
 
 If the computer's LAN IP, proxy port, or HTTPS certificate changes, update the API configuration and `android/app/src/main/res/raw/fsms_local_dev_ca.pem`, then run `npm run mobile:copy` and rebuild.
+If the computer's LAN IP, proxy port, or HTTPS certificate changes, update `www/js/config.js` and `android/app/src/main/res/raw/fsms_local_dev_ca.pem`, then run `npm run mobile:copy` and rebuild.
 
 Install on a connected device:
 
