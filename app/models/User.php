@@ -222,6 +222,8 @@ class User
 
         $this->validatePasswordStrength($password);
 
+        $this->validatePasswordStrength($password);
+
         // Hash password using PHP password_hash (bcrypt)
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 

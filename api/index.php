@@ -59,6 +59,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 // Public authentication routes are the only operations that do not require an established token.
 if (!in_array($resource, ['login', 'register'], true)) {
     authorizeApiOperation($resource, $method, $id, $subresource);
+    authorizeApiOperation($resource, $method, $id);
 }
 
 try {
