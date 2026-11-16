@@ -20,13 +20,69 @@ CREATE TABLE IF NOT EXISTS Users (
     UserID INT AUTO_INCREMENT PRIMARY KEY,
     Username VARCHAR(50) UNIQUE NOT NULL,
     Email VARCHAR(100) UNIQUE NOT NULL,
+    EmailVerifiedAt DATETIME NULL,
+    PendingEmail VARCHAR(255) NULL,
+    EmailGraceUntil DATETIME NULL,
+    RegistrationVerificationRequired TINYINT(1) NOT NULL DEFAULT 0,
+    RegistrationVerificationKeyHash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    LastEmailVerificationSentAt DATETIME NULL,
     PasswordHash VARCHAR(255) NOT NULL,
     FullName VARCHAR(200),
     Phone VARCHAR(20),
+    SmsVerifiedAt DATETIME NULL,
+    LastSmsOtpSentAt DATETIME NULL,
     Role ENUM('admin', 'volunteer', 'donor', 'staff') DEFAULT 'volunteer',
     Status ENUM('pending', 'active', 'inactive') DEFAULT 'pending',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS EmailVerificationTokens (
+    TokenID BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    UserID INT NOT NULL,
+    EmailAddress VARCHAR(255) NOT NULL,
+    Purpose VARCHAR(32) NOT NULL DEFAULT 'register',
+    TokenHash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    ExpiresAt DATETIME NOT NULL,
+    ConsumedAt DATETIME NULL,
+    CreatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_email_verification_hash (TokenHash),
+    KEY idx_email_verification_user_email (UserID, EmailAddress, Purpose),
+    CONSTRAINT fk_email_verification_tokens_user
+        FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS SmsVerificationTokens (
+    TokenID BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    UserID INT NOT NULL,
+    PhoneNumber VARCHAR(20) NOT NULL,
+    OtpHash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    ExpiresAt DATETIME NOT NULL,
+    Attempts INT NOT NULL DEFAULT 0,
+    ConsumedAt DATETIME NULL,
+    CreatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_sms_verification_user_phone (UserID, PhoneNumber, CreatedAt),
+    CONSTRAINT fk_sms_verification_tokens_user
+        FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS DonationPayments (
+    PaymentID BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    DonationID INT NOT NULL DEFAULT 0,
+    Provider VARCHAR(32) NOT NULL DEFAULT 'payfast',
+    PaymentReference VARCHAR(128) NOT NULL,
+    MerchantReference VARCHAR(128) NOT NULL,
+    Amount DECIMAL(10,2) NOT NULL,
+    Currency CHAR(3) NOT NULL DEFAULT 'ZAR',
+    Status ENUM('pending','successful','failed','cancelled','invalid') NOT NULL DEFAULT 'pending',
+    RequestData JSON NULL,
+    ResponseData JSON NULL,
+    VerifiedAt DATETIME NULL,
+    CreatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_donation_payment_reference (PaymentReference),
+    KEY idx_donation_payment_status (Status),
+    KEY idx_donation_payment_donation (DonationID)
 );
 
 -- ==============================================================

@@ -149,6 +149,10 @@ The REST API is served by the PHP backend at the configured API base URL:
 - `POST /api/login` / `POST /api/register` — authentication
 - `POST /api/auth/google/challenge` / `POST /api/auth/google` — Google Sign-In
 - `POST /api/auth/google/link-challenge` / `POST /api/auth/google/link` — link Google to an existing account
+- `POST /api/auth/email-request` / `POST /api/auth/email-verify` — authenticated email verification and pending email changes
+- `POST /api/auth/sms-request` / `POST /api/auth/sms-verify` — authenticated phone verification
+- `POST /api/auth/registration-email-request` / `POST /api/auth/registration-email-verify` — pre-login registration email verification
+- `POST /api/auth/registration-sms-request` / `POST /api/auth/registration-sms-verify` — pre-login registration SMS verification
 - `GET|POST /api/beneficiaries` — beneficiary CRUD
 - `POST /api/attendance` — bulk attendance
 - `GET|POST /api/stock` — food stock
@@ -160,7 +164,9 @@ The REST API is served by the PHP backend at the configured API base URL:
 
 Google Sign-In requires Composer dependencies, Google client configuration, and the additive migrations described in [Google Sign-In setup](docs/GOOGLE_SIGNIN.md). Account approval on an existing database also requires `sql/migrations/20261109_add_volunteer_registration_status.sql`.
 
-Login, registration, and Google Sign-In challenge/login endpoints are public. Google account linking and all other endpoints require a `Bearer` token returned from login.
+Login, registration, registration verification, and Google Sign-In challenge/login endpoints are public. Google account linking, profile verification, and other protected endpoints require a `Bearer` token returned from login.
+
+Email and SMS trial provider setup and the end-to-end verification flow are documented in [Email and SMS verification testing](docs/EMAIL_SMS_VERIFICATION.md).
 
 ## Project Rules
 

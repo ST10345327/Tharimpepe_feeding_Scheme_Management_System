@@ -38,6 +38,14 @@ class Donation {
      */
     public function createDonation($data) {
         try {
+            $donationType = strtolower((string)($data['DonationType'] ?? 'cash'));
+            if ($donationType !== 'cash') {
+                return [
+                    'success' => false,
+                    'message' => 'Only monetary cash donations are currently accepted via the hosted PayFast checkout.'
+                ];
+            }
+
             $stmt = $this->pdo->prepare(
                 "INSERT INTO {$this->table} (DonorName, DonorEmail, DonationType, Amount, Description, DonationDate)
                  VALUES (?, ?, ?, ?, ?, ?)"
@@ -46,7 +54,7 @@ class Donation {
             $result = $stmt->execute([
                 htmlspecialchars($data['DonorName']),
                 htmlspecialchars($data['DonorEmail'] ?? ''),
-                htmlspecialchars($data['DonationType']),
+                htmlspecialchars($donationType),
                 isset($data['Amount']) ? (float)$data['Amount'] : 0,
                 htmlspecialchars($data['Description'] ?? ''),
                 $data['DonationDate']
@@ -157,6 +165,14 @@ class Donation {
      */
     public function updateDonation($id, $data) {
         try {
+            $donationType = strtolower((string)($data['DonationType'] ?? 'cash'));
+            if ($donationType !== 'cash') {
+                return [
+                    'success' => false,
+                    'message' => 'Only cash donations are accepted by the active PayFast workflow.'
+                ];
+            }
+
             $stmt = $this->pdo->prepare(
                 "UPDATE {$this->table} 
                  SET DonorName = ?, DonorEmail = ?, DonationType = ?, Amount = ?, Description = ?, DonationDate = ?
@@ -166,7 +182,7 @@ class Donation {
             $result = $stmt->execute([
                 htmlspecialchars($data['DonorName']),
                 htmlspecialchars($data['DonorEmail'] ?? ''),
-                htmlspecialchars($data['DonationType']),
+                htmlspecialchars($donationType),
                 isset($data['Amount']) ? (float)$data['Amount'] : 0,
                 htmlspecialchars($data['Description'] ?? ''),
                 $data['DonationDate'],
@@ -233,6 +249,32 @@ class Donation {
      */
     public function getDonationSummary() {
         try {
+            $paymentTableExists = false;
+            try {
+                $this->pdo->query('SELECT 1 FROM DonationPayments LIMIT 1');
+                $paymentTableExists = true;
+            } catch (Throwable $e) {
+                $paymentTableExists = false;
+            }
+
+            if ($paymentTableExists) {
+                $stmt = $this->pdo->query(
+                    "SELECT
+                        COUNT(*) as total_donations,
+                        SUM(CASE WHEN DonationType = 'cash' THEN Amount ELSE 0 END) as total_cash,
+                        COUNT(CASE WHEN DonationType = 'cash' THEN 1 END) as cash_donations,
+                        COUNT(CASE WHEN DonationType = 'food' THEN 1 END) as food_donations,
+                        COUNT(CASE WHEN DonationType = 'supplies' THEN 1 END) as supplies_donations,
+                        COUNT(CASE WHEN DonationType = 'other' THEN 1 END) as other_donations,
+                        COUNT(DISTINCT DonorName) as unique_donors
+                     FROM {$this->table}
+                     WHERE DonationID IN (
+                        SELECT DonationID FROM DonationPayments WHERE LOWER(Status) = 'successful'
+                     )"
+                );
+                return $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+
             $stmt = $this->pdo->query(
                 "SELECT 
                     COUNT(*) as total_donations,

@@ -1,0 +1,9 @@
+{
+  "name": "tharimpepe/fsms",
+  "description": "Tharimpepe Feeding Scheme Management System",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "google/apiclient": "^2.18"
+  }
+}

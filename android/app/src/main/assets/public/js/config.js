@@ -15,7 +15,8 @@ const FSMS_API_BASE = (() => {
     const projectRoot = pathname.split('?')[0].split('#')[0]
         .replace(/\/(?:index\.(?:html|php))?$/, '')
         .replace(/\/(?:public|www)$/, '').replace(/\/+$/, '');
-    const secureOrigin = origin.replace(/^http:/i, 'https:').replace(/\/+$/, '');
+    const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+    const secureOrigin = isLocal ? origin.replace(/\/+$/, '') : origin.replace(/^http:/i, 'https:').replace(/\/+$/, '');
     const apiBase = configured || secureOrigin + (projectRoot && projectRoot !== '/' ? projectRoot : '') + '/api';
     if (!/^https:\/\//i.test(apiBase)) {
         throw new Error('API URL must use HTTPS.');

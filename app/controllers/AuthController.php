@@ -111,15 +111,21 @@ try {
                     throw new InvalidArgumentException('Google authentication challenge expired or was already used.');
                 }
 
-                $user = $googleIdentity->findLinkedUser($claims['sub']);
+                $user = $googleIdentity->findOrLinkUserForSignIn($claims);
                 if (!$user) {
                     $error = "This Google account is not linked to an FSMS account. Sign in with your existing FSMS account and link Google first.";
                 } elseif ($user['Status'] !== 'active') {
                     $error = "This FSMS account is not active. Please contact an administrator.";
                 } else {
-                    establishAuthenticatedSession($user);
-                    header('Location: ' . rbacDefaultDashboardPath($user['Role']));
-                    exit();
+                    $account = $userModel->getUserById((int)$user['UserID']);
+                    $verificationMessage = $account ? $userModel->getLoginVerificationMessage($account) : null;
+                    if ($verificationMessage !== null) {
+                        $error = $verificationMessage;
+                    } else {
+                        establishAuthenticatedSession($user);
+                        header('Location: ' . rbacDefaultDashboardPath($user['Role']));
+                        exit();
+                    }
                 }
             } catch (InvalidArgumentException $e) {
                 $error = "Google sign-in failed. Please try again.";
@@ -207,6 +213,8 @@ try {
                             $error = $user['Status'] === 'pending'
                                 ? "Your account is pending approval. Please wait for an administrator to approve your registration."
                                 : "Your account is not active. Please contact an administrator.";
+                        } elseif (($verificationMessage = $userModel->getLoginVerificationMessage($user)) !== null) {
+                            $error = $verificationMessage;
                         } else {
                             // HZ-AUTH-002: Create secure session with session regeneration
                             establishAuthenticatedSession($user);
@@ -264,6 +272,9 @@ try {
                 FormValidator::validateUsername($username);
                 FormValidator::validateEmail($email);
                 FormValidator::validatePassword($password, 'Password');
+                if ($phone === '') {
+                    throw new InvalidArgumentException('A valid South African phone number is required.');
+                }
                 
                 // Check password match
                 if ($password !== $password_confirm) {
@@ -275,7 +286,7 @@ try {
                 }
 
                 // Attempt registration in User model
-                $userId = $userModel->register($username, $email, $password, $role, $fullName, $phone);
+                $userId = $userModel->register($username, $email, $password, $role, $fullName, $phone, 'pending', true);
 
                 if ($userId) {
                     // Create Volunteers record if role is volunteer
@@ -294,10 +305,27 @@ try {
 
                     // Log registration
                     ActivityLog::log($userId, 'register', 'Users', $userId, 'New user registered as ' . $role);
-                    
-                    $success = "Account created successfully! Your account is pending admin approval. Redirecting to login...";
-                    // Redirect after 3 seconds
-                    header("Refresh: 3; URL=index.php?registered=success");
+
+                    $_SESSION['registration_verification_user_id'] = (int)$userId;
+                    $delivery = [];
+                    try {
+                        $userModel->requestEmailVerification((int)$userId, $email, 'register');
+                        $emailService = new EmailVerificationService($db);
+                        $delivery['email'] = $emailService->isMockProvider() ? 'simulated' : 'queued';
+                    } catch (Throwable $e) {
+                        error_log('[FSMS Verification] Website registration email failed (' . get_class($e) . ')');
+                        $delivery['email'] = 'failed';
+                    }
+                    try {
+                        $userModel->requestSmsVerification((int)$userId, $phone);
+                        $smsService = new SmsVerificationService($db);
+                        $delivery['sms'] = $smsService->isMockProvider() ? 'simulated' : 'queued';
+                    } catch (Throwable $e) {
+                        error_log('[FSMS Verification] Website registration SMS failed (' . get_class($e) . ')');
+                        $delivery['sms'] = 'failed';
+                    }
+                    $_SESSION['registration_verification_delivery'] = $delivery;
+                    $action = 'verify_registration';
                 } else {
                     throw new Exception("Registration failed. Please try again.");
                 }
@@ -312,6 +340,53 @@ try {
                 $error = $e->getMessage();
                 logMessage("Registration error: " . $e->getMessage(), 'ERROR');
                 $action = 'register';
+            }
+        }
+    }
+
+    if ($action === 'verify_registration') {
+        $registrationUserId = (int)($_SESSION['registration_verification_user_id'] ?? 0);
+        $registrationUser = $registrationUserId ? $userModel->getUserById($registrationUserId) : false;
+        if (!$registrationUser || empty($registrationUser['RegistrationVerificationRequired'])) {
+            unset($_SESSION['registration_verification_user_id']);
+            header('Location: /index.php?action=login');
+            exit();
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verification_action'])) {
+            if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+                $error = 'Security validation failed. Please reload and try again.';
+            } else {
+                try {
+                    $operation = $_POST['verification_action'] ?? '';
+                    if ($operation === 'verify_email') {
+                        $verified = $userModel->completeEmailVerification($registrationUserId, $registrationUser['Email'], trim((string)($_POST['email_token'] ?? '')), 'register');
+                        $success = $verified ? 'Email verified.' : 'Invalid or expired email verification code.';
+                        if (!$verified) $error = $success;
+                    } elseif ($operation === 'verify_sms') {
+                        $verified = $userModel->verifySmsOtp($registrationUserId, $registrationUser['Phone'], trim((string)($_POST['sms_otp'] ?? '')));
+                        $success = $verified ? 'Phone number verified.' : 'Invalid or expired SMS code.';
+                        if (!$verified) $error = $success;
+                    } elseif ($operation === 'resend_email') {
+                        $userModel->requestEmailVerification($registrationUserId, $registrationUser['Email'], 'register');
+                        $success = 'Verification email queued.';
+                    } elseif ($operation === 'resend_sms') {
+                        $userModel->requestSmsVerification($registrationUserId, $registrationUser['Phone']);
+                        $success = 'SMS verification code queued.';
+                    } else {
+                        $error = 'Unknown verification action.';
+                    }
+                    $registrationUser = $userModel->getUserById($registrationUserId);
+                } catch (ExternalServiceException $e) {
+                    $error = $e->getUserMessage();
+                } catch (InvalidOperationException $e) {
+                    $error = $e->getUserMessage();
+                } catch (RuntimeException $e) {
+                    $error = $e->getMessage();
+                } catch (Throwable $e) {
+                    error_log('[FSMS Verification] Website registration verification failed (' . get_class($e) . ')');
+                    $error = 'Verification could not be completed. Please try again.';
+                }
             }
         }
     }
@@ -353,4 +428,7 @@ if ($action === 'login' || $action === 'google_login_error') {
     include __DIR__ . "/../views/login.php";
 } elseif ($action === 'register') {
     include __DIR__ . "/../views/register.php";
+} elseif ($action === 'verify_registration') {
+    $registrationDelivery = $_SESSION['registration_verification_delivery'] ?? [];
+    include __DIR__ . '/../views/verify_registration.php';
 }

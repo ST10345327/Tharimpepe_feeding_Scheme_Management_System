@@ -183,13 +183,14 @@
             </div>
 
             <div class="form-group">
-                <label for="phone" class="form-label">Phone Number</label>
+                <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
                 <input 
                     type="tel" 
                     class="form-control" 
                     id="phone" 
                     name="phone" 
-                    placeholder="Enter your phone number (optional)"
+                    placeholder="Enter your South African mobile number"
+                    required
                     value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>"
                 />
             </div>

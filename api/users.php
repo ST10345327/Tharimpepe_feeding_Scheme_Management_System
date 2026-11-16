@@ -197,6 +197,7 @@ function handleUsers($method, $id, $subresource = null) {
                 if (!$isSelf && !in_array($status, $allowedStatuses, true)) {
                     apiJsonResponse(false, 'Invalid user status', null, 400);
                 }
+                $emailChanged = strcasecmp(trim((string)$existing['Email']), trim((string)($input['email'] ?? $existing['Email']))) !== 0;
                 $model->updateDetails(
                     (int)$id,
                     $input['email'] ?? $existing['Email'],
@@ -205,7 +206,21 @@ function handleUsers($method, $id, $subresource = null) {
                     $isSelf ? null : $role,
                     $isSelf ? null : $status
                 );
-                apiJsonResponse(true, 'User updated successfully', $model->getUserById((int)$id));
+                if ($emailChanged) {
+                    try {
+                        $model->requestEmailVerification((int)$id, $input['email'], 'change-email');
+                    } catch (InvalidOperationException $e) {
+                        apiJsonResponse(false, $e->getUserMessage(), null, 429);
+                    } catch (ExternalServiceException $e) {
+                        apiJsonResponse(false, 'Profile saved, but the verification email could not be delivered. You can request another email from your profile.', [
+                            'user' => $model->getUserById((int)$id),
+                        ], 503);
+                    }
+                }
+                $message = $emailChanged
+                    ? 'Profile updated. Verify the new email address to apply the change.'
+                    : 'User updated successfully';
+                apiJsonResponse(true, $message, $model->getUserById((int)$id));
             }
             apiJsonResponse(false, 'Invalid update request', null, 400);
             break;
