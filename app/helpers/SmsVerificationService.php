@@ -25,7 +25,12 @@ class MockSmsProvider implements SmsProviderAdapter
                "To: $phoneNumber\n" .
                "OTP Code: $code\n" .
                "------------------------------------------------------------\n";
-        error_log($msg);
+        $logMsg = "\n------------------------------------------------------------\n" .
+                  "[MOCK SMS SENT]\n" .
+                  "To: $phoneNumber\n" .
+                  "OTP Code: simulated\n" .
+                  "------------------------------------------------------------\n";
+        error_log($logMsg);
         echo $msg;
 
         return [

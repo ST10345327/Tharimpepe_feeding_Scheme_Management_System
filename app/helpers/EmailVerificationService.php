@@ -26,7 +26,13 @@ class MockEmailProvider implements EmailProviderAdapter
                "Code: $token\n" .
                "Purpose: $purpose\n" .
                "------------------------------------------------------------\n";
-        error_log($msg);
+        $logMsg = "\n------------------------------------------------------------\n" .
+                  "[MOCK EMAIL SENT]\n" .
+                  "To: $emailAddress\n" .
+                  "Code: simulated\n" .
+                  "Purpose: $purpose\n" .
+                  "------------------------------------------------------------\n";
+        error_log($logMsg);
         echo $msg;
 
         return [
