@@ -14,6 +14,14 @@ if (empty($endpoint)) {
             'POST /api/login',
             'POST /api/register',
             'POST /api/logout',
+            'POST /api/auth/google/challenge',
+            'POST /api/auth/google/link-challenge',
+            'POST /api/auth/google',
+            'POST /api/auth/google/link',
+            'POST /api/auth/registration-email-request',
+            'POST /api/auth/registration-email-verify',
+            'POST /api/auth/registration-sms-request',
+            'POST /api/auth/registration-sms-verify',
             'GET /api/beneficiaries',
             'GET /api/beneficiaries/{id}',
             'POST /api/beneficiaries',
@@ -27,11 +35,15 @@ if (empty($endpoint)) {
             'DELETE /api/stock/{id}',
             'GET /api/donations',
             'POST /api/donations',
+            'POST /api/donations/checkout',
+            'POST /api/donations/itn',
             'GET /api/volunteers',
             'POST /api/volunteers',
             'GET /api/dashboard',
             'GET /api/reports',
             'GET /api/users',
+            'POST /api/users/{id}/approve',
+            'POST /api/users/{id}/reject',
             'GET /api/mealsessions',
         ]
     ]);
@@ -46,11 +58,34 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // Public authentication routes are the only operations that do not require an established token.
 if (!in_array($resource, ['login', 'register'], true)) {
+    authorizeApiOperation($resource, $method, $id, $subresource);
     authorizeApiOperation($resource, $method, $id);
 }
 
 try {
     switch ($resource) {
+        case 'auth':
+            require __DIR__ . '/auth.php';
+            if ($id === 'registration-email-request') {
+                handleRegistrationEmailVerificationRequest();
+            } elseif ($id === 'registration-email-verify') {
+                handleRegistrationEmailVerificationConfirm();
+            } elseif ($id === 'registration-sms-request') {
+                handleRegistrationSmsVerificationRequest();
+            } elseif ($id === 'registration-sms-verify') {
+                handleRegistrationSmsVerificationConfirm();
+            } elseif (in_array($subresource, ['email-request'], true)) {
+                handleEmailVerificationRequest();
+            } elseif (in_array($subresource, ['email-verify'], true)) {
+                handleEmailVerificationConfirm();
+            } elseif (in_array($subresource, ['sms-request'], true)) {
+                handleSmsVerificationRequest();
+            } elseif (in_array($subresource, ['sms-verify'], true)) {
+                handleSmsVerificationConfirm();
+            } else {
+                handleGoogleAuth($method, $id, $subresource);
+            }
+            break;
         case 'login':
             require __DIR__ . '/auth.php';
             handleLogin();
@@ -77,7 +112,13 @@ try {
             break;
         case 'donations':
             require __DIR__ . '/donations.php';
-            handleDonations($method, $id);
+            if ($id === 'checkout') {
+                handleDonationCheckout();
+            } elseif ($id === 'itn') {
+                handleDonationPayfastItn();
+            } else {
+                handleDonations($method, $id);
+            }
             break;
         case 'volunteers':
             require __DIR__ . '/volunteers.php';
@@ -93,7 +134,7 @@ try {
             break;
         case 'users':
             require __DIR__ . '/users.php';
-            handleUsers($method, $id);
+            handleUsers($method, $id, $subresource);
             break;
         case 'mealsessions':
             require __DIR__ . '/mealsessions.php';

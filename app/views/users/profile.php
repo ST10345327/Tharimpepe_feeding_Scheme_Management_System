@@ -188,6 +188,21 @@ require_once __DIR__ . '/../includes/layout-header.php';
                 </div>
             </div>
 
+            <?php $googleWebClientId = getenv('GOOGLE_WEB_CLIENT_ID') ?: ''; ?>
+            <?php if ($googleWebClientId !== ''): ?>
+                <div class="detail-section">
+                    <h5><i class="fab fa-google" style="margin-right:8px;"></i>Google Sign-In</h5>
+                    <p class="text-muted">Link a Google account while signed in to this FSMS account. Google identities are matched by verified subject, never by email alone.</p>
+                    <div id="google-link-error" class="alert alert-danger" role="alert" style="display:none;"></div>
+                    <div id="google-link-button" data-client-id="<?php echo htmlspecialchars($googleWebClientId, ENT_QUOTES, 'UTF-8'); ?>"></div>
+                    <form id="google-link-form" method="POST" action="/index.php?action=google_link" style="display:none;">
+                        <?php echo csrfTokenInput(); ?>
+                        <input type="hidden" name="google_credential" id="google-link-credential">
+                        <input type="hidden" name="google_nonce" id="google-link-nonce">
+                    </form>
+                </div>
+            <?php endif; ?>
+
             <div class="d-flex gap-2 mt-3">
                 <a href="../controllers/ProfileController.php?action=change_password" class="btn" style="background:#1b3a5c;color:#fff;border-radius:9px;font-weight:700;padding:10px 24px;">
                     <i class="fas fa-lock"></i> Change Password
@@ -199,5 +214,61 @@ require_once __DIR__ . '/../includes/layout-header.php';
         </div>
     </div>
 </div>
+
+<?php if ($googleWebClientId !== ''): ?>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        (() => {
+            const container = document.getElementById('google-link-button');
+            const error = document.getElementById('google-link-error');
+            const showError = (message) => {
+                error.textContent = message;
+                error.style.display = 'block';
+            };
+            const initialize = async () => {
+                try {
+                    const form = document.getElementById('google-link-form');
+                    const csrfToken = form.querySelector('[name="csrf_token"]').value;
+                    const response = await fetch('/index.php?action=google_link_challenge', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ csrf_token: csrfToken }),
+                        credentials: 'same-origin'
+                    });
+                    const result = await response.json();
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.message || 'Google Sign-In is unavailable.');
+                    }
+                    const waitForGoogle = () => {
+                        if (!window.google?.accounts?.id) {
+                            window.setTimeout(waitForGoogle, 50);
+                            return;
+                        }
+                        window.google.accounts.id.initialize({
+                            client_id: container.dataset.clientId,
+                            nonce: result.data.nonce,
+                            callback: (credential) => {
+                                document.getElementById('google-link-credential').value = credential.credential;
+                                document.getElementById('google-link-nonce').value = result.data.nonce;
+                                document.getElementById('google-link-form').submit();
+                            }
+                        });
+                        window.google.accounts.id.renderButton(container, {
+                            type: 'standard',
+                            theme: 'outline',
+                            size: 'large',
+                            text: 'continue_with',
+                            shape: 'rectangular'
+                        });
+                    };
+                    waitForGoogle();
+                } catch (e) {
+                    showError(e.message || 'Google account linking is temporarily unavailable.');
+                }
+            };
+            initialize();
+        })();
+    </script>
+<?php endif; ?>
 
 <?php require_once __DIR__ . '/../includes/layout-footer.php'; ?>

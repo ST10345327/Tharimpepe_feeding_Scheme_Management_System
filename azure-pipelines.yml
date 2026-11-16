@@ -20,14 +20,25 @@ jobs:
     steps:
       - checkout: self
 
-      - bash: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install --yes php-cli php-sqlite3
-          php --version
-          php -r 'if (PHP_MAJOR_VERSION !== 8) { fwrite(STDERR, "PHP 8 is required.\n"); exit(1); }
-          if (!extension_loaded("pdo_sqlite")) { fwrite(STDERR, "The pdo_sqlite extension is required by the test suite.\n"); exit(1); }'
-        displayName: Install and verify PHP runtime
+  - bash: |
+      set -euo pipefail
+      sudo apt-get update
+      sudo apt-get install --yes php-cli php-sqlite3
+      php --version
+      php -r 'if (PHP_MAJOR_VERSION !== 8) { fwrite(STDERR, "PHP 8 is required.\n"); exit(1); }
+      if (!extension_loaded("pdo_sqlite")) { fwrite(STDERR, "The pdo_sqlite extension is required by the test suite.\n"); exit(1); }'
+    displayName: Install and verify PHP runtime
+
+  - bash: |
+      set -euo pipefail
+      if ! command -v composer >/dev/null 2>&1; then
+        php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+        php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+        rm -f composer-setup.php
+      fi
+      composer --version
+      composer install --no-interaction --prefer-dist
+    displayName: Install Composer dependencies
 
       - bash: |
           set -euo pipefail

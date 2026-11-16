@@ -16,6 +16,10 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../app/helpers/Exceptions.php';
 require_once __DIR__ . '/../app/helpers/ErrorHandler.php';
 require_once __DIR__ . '/../app/helpers/FormValidator.php';
+require_once __DIR__ . '/../app/helpers/GoogleIdentityService.php';
+require_once __DIR__ . '/../app/helpers/EmailVerificationService.php';
+require_once __DIR__ . '/../app/helpers/SmsVerificationService.php';
+require_once __DIR__ . '/../app/helpers/PayFastService.php';
 
 require_once __DIR__ . '/../app/models/User.php';
 require_once __DIR__ . '/../app/models/Beneficiary.php';
@@ -128,6 +132,28 @@ function revokeApiToken(PDO $db, $tokenId) {
 }
 
 /** Apply authorization to every routed API operation before dispatch. */
+function authorizeApiOperation($resource, $method, $id = null, $subresource = null) {
+    if ($resource === 'auth') {
+        $registrationRoutes = [
+            'registration-email-request',
+            'registration-email-verify',
+            'registration-sms-request',
+            'registration-sms-verify',
+        ];
+        if ($method === 'POST' && in_array($id, $registrationRoutes, true) && $subresource === null) {
+            return null;
+        }
+        $allowedSubresources = ['challenge', 'link-challenge', 'link', 'email-request', 'email-verify', 'sms-request', 'sms-verify', null];
+        if ($method !== 'POST' || $id !== 'google'
+            || !in_array($subresource, $allowedSubresources, true)) {
+            apiJsonResponse(false, 'Authentication endpoint not found', null, 404);
+        }
+        if (in_array($subresource, ['link-challenge', 'link', 'email-request', 'email-verify', 'sms-request', 'sms-verify'], true)) {
+            return requireAuth();
+        }
+        return null;
+    }
+
 function authorizeApiOperation($resource, $method, $id = null) {
     $permissions = [
         'logout' => ['POST' => ['admin', 'staff', 'volunteer', 'donor']],
@@ -165,6 +191,9 @@ function authorizeApiOperation($resource, $method, $id = null) {
     }
 
     // Donation submissions already support anonymous donors; authenticated donor identity is enforced in the handler.
+    if ($resource === 'donations' && $method === 'POST' && in_array($id, ['checkout', 'itn'], true)) {
+        return null;
+    }
     if ($resource === 'donations' && $method === 'POST') {
         return null;
     }
@@ -185,6 +214,7 @@ function validateRequired($data, $fields) {
             $missing[] = $field;
         }
     }
+
     if (!empty($missing)) {
         apiJsonResponse(false, 'Missing required fields: ' . implode(', ', $missing), null, 400);
     }

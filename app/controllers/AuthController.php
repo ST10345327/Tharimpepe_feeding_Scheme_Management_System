@@ -11,10 +11,22 @@ require_once __DIR__ . "/../helpers/bootstrap.php";
 require_once __DIR__ . "/../models/User.php";
 require_once __DIR__ . "/../models/Volunteer.php";
 require_once __DIR__ . "/../models/ActivityLog.php";
+require_once __DIR__ . "/../helpers/GoogleIdentityService.php";
 
 $action = isset($_GET['action']) ? $_GET['action'] : 'login';
 $error = "";
 $success = "";
+
+function establishAuthenticatedSession(array $user)
+{
+    session_regenerate_id(true);
+    $_SESSION["user_id"] = $user["UserID"];
+    $_SESSION["username"] = $user["Username"];
+    $_SESSION["email"] = $user["Email"];
+    $_SESSION["role"] = $user["Role"];
+    $_SESSION["login_time"] = time();
+    ActivityLog::log($user['UserID'], 'login', 'Users', $user['UserID'], 'User logged in');
+}
 
 // Treat a repeated login POST from an already authenticated browser as a no-op.
 if ($action === 'login' && $_SERVER["REQUEST_METHOD"] === "POST" && isUserLoggedIn()) {
@@ -23,11 +35,151 @@ if ($action === 'login' && $_SERVER["REQUEST_METHOD"] === "POST" && isUserLogged
 }
 
 try {
+    if ($action === 'google_link_challenge') {
+        header('Content-Type: application/json');
+        $respond = function ($success, $message, $data = null, $statusCode = 200) {
+            http_response_code($statusCode);
+            $response = ['success' => $success, 'message' => $message];
+            if ($data !== null) {
+                $response['data'] = $data;
+            }
+            echo json_encode($response);
+            exit();
+        };
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $respond(false, 'Method not allowed', null, 405);
+        }
+        if (!isUserLoggedIn()) {
+            $respond(false, 'Authentication required', null, 401);
+        }
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            $respond(false, 'Security validation failed. Please reload the page and try again.', null, 403);
+        }
+
+        try {
+            $challengeDb = getDBConnection();
+            $statusStmt = $challengeDb->prepare(
+                "SELECT Status FROM Users WHERE UserID = :user_id AND Status = 'active' LIMIT 1"
+            );
+            $statusStmt->execute([':user_id' => (int)$_SESSION['user_id']]);
+            if (!$statusStmt->fetchColumn()) {
+                $respond(false, 'Only active FSMS accounts can link Google Sign-In.', null, 403);
+            }
+
+            $challengeService = new GoogleIdentityService($challengeDb);
+            $nonce = $challengeService->createNonce(
+                'link',
+                (int)$_SESSION['user_id'],
+                hash('sha256', session_id())
+            );
+            $respond(true, 'Google account-link challenge created', [
+                'client_id' => GoogleIdentityService::getWebClientId(),
+                'nonce' => $nonce,
+            ]);
+        } catch (Throwable $e) {
+            error_log('[FSMS Google Auth] Website link challenge failed (' . get_class($e) . ')');
+            $respond(false, 'Google account linking is temporarily unavailable.', null, 503);
+        }
+    }
+
     // Get database connection
     $db = getDBConnection();
     
     // Create user model
     $userModel = new User($db);
+    $googleIdentity = new GoogleIdentityService($db);
+
+    if ($action === 'google_login' && $_SERVER["REQUEST_METHOD"] !== "POST") {
+        header('Location: /');
+        exit();
+    }
+
+    if ($action === 'google_link' && $_SERVER["REQUEST_METHOD"] !== "POST") {
+        header('Location: ' . (isUserLoggedIn() ? '/controllers/ProfileController.php?action=profile' : '/'));
+        exit();
+    }
+
+    if ($action === 'google_login' && $_SERVER["REQUEST_METHOD"] === "POST") {
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            $error = "Security validation failed. Please try again.";
+        } else {
+            try {
+                $nonce = $_POST['google_nonce'] ?? '';
+                $claims = $googleIdentity->verifyIdToken($_POST['google_credential'] ?? '', $nonce);
+                if (!$googleIdentity->consumeNonce($nonce, 'login')) {
+                    throw new InvalidArgumentException('Google authentication challenge expired or was already used.');
+                }
+
+                $user = $googleIdentity->findOrLinkUserForSignIn($claims);
+                if (!$user) {
+                    $error = "This Google account is not linked to an FSMS account. Sign in with your existing FSMS account and link Google first.";
+                } elseif ($user['Status'] !== 'active') {
+                    $error = "This FSMS account is not active. Please contact an administrator.";
+                } else {
+                    $account = $userModel->getUserById((int)$user['UserID']);
+                    $verificationMessage = $account ? $userModel->getLoginVerificationMessage($account) : null;
+                    if ($verificationMessage !== null) {
+                        $error = $verificationMessage;
+                    } else {
+                        establishAuthenticatedSession($user);
+                        header('Location: ' . rbacDefaultDashboardPath($user['Role']));
+                        exit();
+                    }
+                }
+            } catch (InvalidArgumentException $e) {
+                $error = "Google sign-in failed. Please try again.";
+            } catch (Throwable $e) {
+                error_log('[FSMS Google Auth] Website sign-in failed (' . get_class($e) . ')');
+                $error = "Google sign-in is temporarily unavailable.";
+            }
+        }
+        $action = 'google_login_error';
+    }
+
+    if ($action === 'google_link' && $_SERVER["REQUEST_METHOD"] === "POST") {
+        if (!isUserLoggedIn()) {
+            header('Location: /');
+            exit();
+        }
+        $statusStmt = $db->prepare('SELECT Status FROM Users WHERE UserID = :user_id LIMIT 1');
+        $statusStmt->execute([':user_id' => (int)$_SESSION['user_id']]);
+        if ($statusStmt->fetchColumn() !== 'active') {
+            $_SESSION['error'] = 'Only active FSMS accounts can link Google Sign-In.';
+            header('Location: /controllers/ProfileController.php?action=profile');
+            exit();
+        }
+        if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            $_SESSION['error'] = "Security validation failed. Please try again.";
+            header('Location: /controllers/ProfileController.php?action=profile');
+            exit();
+        }
+
+        try {
+            $nonce = $_POST['google_nonce'] ?? '';
+            $claims = $googleIdentity->verifyIdToken($_POST['google_credential'] ?? '', $nonce);
+            $sessionHash = hash('sha256', session_id());
+            if (!$googleIdentity->consumeNonce(
+                $nonce,
+                'link',
+                (int)$_SESSION['user_id'],
+                $sessionHash
+            )) {
+                throw new InvalidArgumentException('Google authentication challenge expired or was already used.');
+            }
+            $googleIdentity->linkIdentity((int)$_SESSION['user_id'], $claims['sub']);
+            $_SESSION['message'] = 'Google account linked successfully.';
+        } catch (InvalidArgumentException $e) {
+            $_SESSION['error'] = 'Google account linking failed. Please try again.';
+        } catch (DomainException $e) {
+            $_SESSION['error'] = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log('[FSMS Google Auth] Website account linking failed (' . get_class($e) . ')');
+            $_SESSION['error'] = 'Google account linking is temporarily unavailable.';
+        }
+        header('Location: /controllers/ProfileController.php?action=profile');
+        exit();
+    }
 
     /**
      * HZ-AUTH-001
@@ -57,19 +209,15 @@ try {
 
                     if ($user) {
                         // Check if user is pending approval
-                        if ($user['Status'] === 'pending') {
-                            $error = "Your account is pending approval. Please wait for an administrator to approve your registration.";
+                        if ($user['Status'] !== 'active') {
+                            $error = $user['Status'] === 'pending'
+                                ? "Your account is pending approval. Please wait for an administrator to approve your registration."
+                                : "Your account is not active. Please contact an administrator.";
+                        } elseif (($verificationMessage = $userModel->getLoginVerificationMessage($user)) !== null) {
+                            $error = $verificationMessage;
                         } else {
                             // HZ-AUTH-002: Create secure session with session regeneration
-                            session_regenerate_id(true);
-                            $_SESSION["user_id"] = $user["UserID"];
-                            $_SESSION["username"] = $user["Username"];
-                            $_SESSION["email"] = $user["Email"];
-                            $_SESSION["role"] = $user["Role"];
-                            $_SESSION["login_time"] = time();
-
-                            // Log login activity
-                            ActivityLog::log($user['UserID'], 'login', 'Users', $user['UserID'], 'User logged in');
+                            establishAuthenticatedSession($user);
 
                             // Redirect to index which serves dashboard for authenticated users
                             header("Location: index.php");
@@ -124,6 +272,9 @@ try {
                 FormValidator::validateUsername($username);
                 FormValidator::validateEmail($email);
                 FormValidator::validatePassword($password, 'Password');
+                if ($phone === '') {
+                    throw new InvalidArgumentException('A valid South African phone number is required.');
+                }
                 
                 // Check password match
                 if ($password !== $password_confirm) {
@@ -135,7 +286,7 @@ try {
                 }
 
                 // Attempt registration in User model
-                $userId = $userModel->register($username, $email, $password, $role, $fullName, $phone);
+                $userId = $userModel->register($username, $email, $password, $role, $fullName, $phone, 'pending', true);
 
                 if ($userId) {
                     // Create Volunteers record if role is volunteer
@@ -154,10 +305,27 @@ try {
 
                     // Log registration
                     ActivityLog::log($userId, 'register', 'Users', $userId, 'New user registered as ' . $role);
-                    
-                    $success = "Account created successfully! Your account is pending admin approval. Redirecting to login...";
-                    // Redirect after 3 seconds
-                    header("Refresh: 3; URL=index.php?registered=success");
+
+                    $_SESSION['registration_verification_user_id'] = (int)$userId;
+                    $delivery = [];
+                    try {
+                        $userModel->requestEmailVerification((int)$userId, $email, 'register');
+                        $emailService = new EmailVerificationService($db);
+                        $delivery['email'] = $emailService->isMockProvider() ? 'simulated' : 'queued';
+                    } catch (Throwable $e) {
+                        error_log('[FSMS Verification] Website registration email failed (' . get_class($e) . ')');
+                        $delivery['email'] = 'failed';
+                    }
+                    try {
+                        $userModel->requestSmsVerification((int)$userId, $phone);
+                        $smsService = new SmsVerificationService($db);
+                        $delivery['sms'] = $smsService->isMockProvider() ? 'simulated' : 'queued';
+                    } catch (Throwable $e) {
+                        error_log('[FSMS Verification] Website registration SMS failed (' . get_class($e) . ')');
+                        $delivery['sms'] = 'failed';
+                    }
+                    $_SESSION['registration_verification_delivery'] = $delivery;
+                    $action = 'verify_registration';
                 } else {
                     throw new Exception("Registration failed. Please try again.");
                 }
@@ -172,6 +340,53 @@ try {
                 $error = $e->getMessage();
                 logMessage("Registration error: " . $e->getMessage(), 'ERROR');
                 $action = 'register';
+            }
+        }
+    }
+
+    if ($action === 'verify_registration') {
+        $registrationUserId = (int)($_SESSION['registration_verification_user_id'] ?? 0);
+        $registrationUser = $registrationUserId ? $userModel->getUserById($registrationUserId) : false;
+        if (!$registrationUser || empty($registrationUser['RegistrationVerificationRequired'])) {
+            unset($_SESSION['registration_verification_user_id']);
+            header('Location: /index.php?action=login');
+            exit();
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verification_action'])) {
+            if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+                $error = 'Security validation failed. Please reload and try again.';
+            } else {
+                try {
+                    $operation = $_POST['verification_action'] ?? '';
+                    if ($operation === 'verify_email') {
+                        $verified = $userModel->completeEmailVerification($registrationUserId, $registrationUser['Email'], trim((string)($_POST['email_token'] ?? '')), 'register');
+                        $success = $verified ? 'Email verified.' : 'Invalid or expired email verification code.';
+                        if (!$verified) $error = $success;
+                    } elseif ($operation === 'verify_sms') {
+                        $verified = $userModel->verifySmsOtp($registrationUserId, $registrationUser['Phone'], trim((string)($_POST['sms_otp'] ?? '')));
+                        $success = $verified ? 'Phone number verified.' : 'Invalid or expired SMS code.';
+                        if (!$verified) $error = $success;
+                    } elseif ($operation === 'resend_email') {
+                        $userModel->requestEmailVerification($registrationUserId, $registrationUser['Email'], 'register');
+                        $success = 'Verification email queued.';
+                    } elseif ($operation === 'resend_sms') {
+                        $userModel->requestSmsVerification($registrationUserId, $registrationUser['Phone']);
+                        $success = 'SMS verification code queued.';
+                    } else {
+                        $error = 'Unknown verification action.';
+                    }
+                    $registrationUser = $userModel->getUserById($registrationUserId);
+                } catch (ExternalServiceException $e) {
+                    $error = $e->getUserMessage();
+                } catch (InvalidOperationException $e) {
+                    $error = $e->getUserMessage();
+                } catch (RuntimeException $e) {
+                    $error = $e->getMessage();
+                } catch (Throwable $e) {
+                    error_log('[FSMS Verification] Website registration verification failed (' . get_class($e) . ')');
+                    $error = 'Verification could not be completed. Please try again.';
+                }
             }
         }
     }
@@ -209,8 +424,11 @@ try {
 }
 
 // Render appropriate view based on action
-if ($action === 'login') {
+if ($action === 'login' || $action === 'google_login_error') {
     include __DIR__ . "/../views/login.php";
 } elseif ($action === 'register') {
     include __DIR__ . "/../views/register.php";
+} elseif ($action === 'verify_registration') {
+    $registrationDelivery = $_SESSION['registration_verification_delivery'] ?? [];
+    include __DIR__ . '/../views/verify_registration.php';
 }

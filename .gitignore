@@ -16,6 +16,9 @@ Desktop.ini
 # Dependency directories
 vendor/
 node_modules/
+www/js/config.local.js
+android/app/src/main/assets/public/js/config.local.js
+android/www/js/config.local.js
 
 # Build and cache output
 dist/
@@ -43,6 +46,7 @@ pnpm-lock.yaml
 # Android / Gradle build cache
 .gradle/
 *.lock
+!composer.lock
 
 # PHP session files
 sess_*

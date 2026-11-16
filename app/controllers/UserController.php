@@ -13,6 +13,7 @@ require_once __DIR__ . "/../../config/database.php";
 require_once __DIR__ . "/../helpers/SessionHandler.php";
 require_once __DIR__ . "/../helpers/Rbac.php";
 require_once __DIR__ . "/../models/ActivityLog.php";
+require_once __DIR__ . "/../models/User.php";
 require_once __DIR__ . "/../models/Volunteer.php";
 
 // Require admin access
@@ -121,6 +122,13 @@ function listUsers() {
     }
     if (!empty($filters['status'])) {
         $query .= " AND Status = " . $conn->quote($filters['status']);
+        if ($filters['status'] === 'pending') {
+            require_once __DIR__ . '/../models/User.php';
+            $userModel = new User($conn);
+            if ($userModel->supportsEmailVerificationFields()) {
+                $query .= " AND EmailVerifiedAt IS NOT NULL AND SmsVerifiedAt IS NOT NULL";
+            }
+        }
     }
     if (!empty($filters['search'])) {
         $search = '%' . $filters['search'] . '%';
@@ -141,6 +149,13 @@ function listUsers() {
     }
     if (!empty($filters['status'])) {
         $countQuery .= " AND Status = " . $conn->quote($filters['status']);
+        if ($filters['status'] === 'pending') {
+            require_once __DIR__ . '/../models/User.php';
+            $userModel = new User($conn);
+            if ($userModel->supportsEmailVerificationFields()) {
+                $countQuery .= " AND EmailVerifiedAt IS NOT NULL AND SmsVerifiedAt IS NOT NULL";
+            }
+        }
     }
     $stmt = $conn->prepare($countQuery);
     $stmt->execute();
@@ -265,25 +280,37 @@ function updateUser() {
     $status = $_POST['status'] ?? 'active';
     
     $conn = getConnection();
-    $query = "UPDATE Users SET Email = :email, FullName = :fullname, Phone = :phone, 
-              Status = :status, UpdatedAt = NOW() WHERE UserID = :user_id";
-    $stmt = $conn->prepare($query);
-    $stmt->bindParam(':email', $email);
-    $stmt->bindParam(':fullname', $fullname);
-    $stmt->bindParam(':phone', $phone);
-    $stmt->bindParam(':status', $status);
-    $stmt->bindParam(':user_id', $userId);
-    
-    if ($stmt->execute()) {
+    try {
+        $userModel = new User($conn);
+        $existing = $userModel->getUserById($userId);
+        if (!$existing) {
+            throw new RuntimeException('User not found.');
+        }
+        $emailChanged = strcasecmp(trim((string)$existing['Email']), trim((string)$email)) !== 0;
+        if (!$userModel->updateDetails($userId, $email, $fullname, $phone, $existing['Role'], $status)) {
+            throw new RuntimeException('User details could not be updated.');
+        }
+        if ($emailChanged) {
+            try {
+                $userModel->requestEmailVerification($userId, $email, 'change-email');
+            } catch (Throwable $e) {
+                error_log('[FSMS Verification] Admin email-change delivery failed (' . get_class($e) . ')');
+                $_SESSION['error'] = 'User details saved, but the verification email could not be delivered. The email change remains pending.';
+                header("Location: UserController.php?action=view&id=$userId");
+                exit();
+            }
+        }
         ActivityLog::log(getCurrentUser()['user_id'], 'update_user', 'User', $userId, "Updated user information");
-        $_SESSION['success'] = "User updated successfully";
+        $_SESSION['success'] = $emailChanged
+            ? "User details saved. The new email will apply after verification."
+            : "User updated successfully";
         header("Location: UserController.php?action=view&id=$userId");
         exit;
+    } catch (Throwable $e) {
+        $_SESSION['error'] = $e->getMessage();
+        header("Location: UserController.php?action=edit&id=$userId");
+        exit();
     }
-    
-    $_SESSION['error'] = "Error updating user";
-    header("Location: UserController.php?action=edit&id=$userId");
-    exit;
 }
 
 function deleteUserConfirm() {

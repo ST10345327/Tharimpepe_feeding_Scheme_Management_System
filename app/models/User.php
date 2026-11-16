@@ -17,6 +17,99 @@ class User
         $this->conn = $db;
     }
 
+    public function supportsEmailVerificationFields()
+    {
+        try {
+            $stmt = $this->conn->query(
+                'SELECT EmailVerifiedAt, PendingEmail, EmailGraceUntil,
+                        RegistrationVerificationRequired, SmsVerifiedAt
+                 FROM Users LIMIT 1'
+            );
+            return $stmt !== false;
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    public function isEmailVerificationGraceSatisfied(array $user)
+    {
+        if (!$this->supportsEmailVerificationFields()) {
+            return true;
+        }
+
+        $emailVerifiedAt = $user['EmailVerifiedAt'] ?? null;
+        if (!empty($emailVerifiedAt)) {
+            return true;
+        }
+
+        $graceUntil = $user['EmailGraceUntil'] ?? null;
+        try {
+            $timestamp = is_string($graceUntil)
+                ? (new DateTimeImmutable($graceUntil, new DateTimeZone('UTC')))->getTimestamp()
+                : false;
+        } catch (Exception $e) {
+            $timestamp = false;
+        }
+        return $timestamp !== false && $timestamp > time();
+    }
+
+    public function getLoginVerificationMessage(array $user)
+    {
+        if (!$this->supportsEmailVerificationFields()) {
+            return null;
+        }
+
+        $registrationVerificationRequired = !empty($user['RegistrationVerificationRequired']);
+        if ($registrationVerificationRequired &&
+            (empty($user['EmailVerifiedAt']) || empty($user['SmsVerifiedAt']))) {
+            return 'Verify your email address and phone number before signing in.';
+        }
+
+        if (empty($user['EmailVerifiedAt']) &&
+            !empty($user['EmailGraceUntil']) &&
+            !$this->isEmailVerificationGraceSatisfied($user)) {
+            return 'Verify your email address before signing in.';
+        }
+
+        return null;
+    }
+
+    public function requestEmailVerification($userId, $email, $purpose = 'register')
+    {
+        if (!$this->supportsEmailVerificationFields()) {
+            return false;
+        }
+
+        require_once __DIR__ . '/../helpers/EmailVerificationService.php';
+        $service = new EmailVerificationService($this->conn);
+        return $service->createTokenForUser((int)$userId, $email, $purpose);
+    }
+
+    public function completeEmailVerification($userId, $email, $token, $purpose = 'register')
+    {
+        if (!$this->supportsEmailVerificationFields()) {
+            return false;
+        }
+
+        require_once __DIR__ . '/../helpers/EmailVerificationService.php';
+        $service = new EmailVerificationService($this->conn);
+        return $service->verifyToken((int)$userId, $email, $token, $purpose);
+    }
+
+    public function requestSmsVerification($userId, $phone)
+    {
+        require_once __DIR__ . '/../helpers/SmsVerificationService.php';
+        $service = new SmsVerificationService($this->conn);
+        return $service->createOtp((int)$userId, $phone);
+    }
+
+    public function verifySmsOtp($userId, $phone, $code)
+    {
+        require_once __DIR__ . '/../helpers/SmsVerificationService.php';
+        $service = new SmsVerificationService($this->conn);
+        return $service->verifyOtp((int)$userId, $phone, $code);
+    }
+
     /**
      * HZ-USER-001
      * Purpose: Authenticate user by verifying username and password
@@ -32,12 +125,11 @@ class User
             return false;
         }
 
-        // Verify password using PHP password_verify
-        if (password_verify($password, $user["PasswordHash"])) {
-            return $user;
+        if (!password_verify($password, $user["PasswordHash"])) {
+            return false;
         }
 
-        return false;
+        return $user;
     }
 
     /**
@@ -49,7 +141,10 @@ class User
      */
     public function findByUsername($username)
     {
-        $query = "SELECT UserID, Username, Email, PasswordHash, Role, CreatedAt, Status 
+        $verificationFields = $this->supportsEmailVerificationFields()
+            ? ', EmailVerifiedAt, SmsVerifiedAt, EmailGraceUntil, RegistrationVerificationRequired'
+            : '';
+        $query = "SELECT UserID, Username, Email, PasswordHash, Role, CreatedAt, Status{$verificationFields}
                   FROM " . $this->table . " 
                   WHERE Username = :username 
                   AND Status IN ('active', 'pending') 
@@ -98,7 +193,7 @@ class User
      * Security: Hashes password using PHP password_hash, validates input
      * Validation: Checks for duplicate username/email, validates email format
      */
-    public function register($username, $email, $password, $role = 'volunteer', $fullName = null, $phone = null, $status = 'pending')
+    public function register($username, $email, $password, $role = 'volunteer', $fullName = null, $phone = null, $status = 'pending', $requiresVerification = false)
     {
         // Validation: Check if username already exists
         if ($this->findByUsername($username)) {
@@ -114,6 +209,18 @@ class User
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new Exception("Invalid email format");
         }
+        if ($requiresVerification) {
+            if (!$this->supportsEmailVerificationFields()) {
+                throw new RuntimeException('Apply the email and SMS verification migration before accepting new registrations.');
+            }
+            require_once __DIR__ . '/../helpers/SmsVerificationService.php';
+            $phone = SmsVerificationService::normalizePhoneNumber($phone);
+            if (!preg_match('/^0[6-8]\d{8}$/', $phone)) {
+                throw new InvalidArgumentException('A valid South African mobile number is required.');
+            }
+        }
+
+        $this->validatePasswordStrength($password);
 
         $this->validatePasswordStrength($password);
 
@@ -121,9 +228,13 @@ class User
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
         // Prepare and execute INSERT query
-        $query = "INSERT INTO " . $this->table . " 
-                  (Username, Email, PasswordHash, FullName, Phone, Role, Status) 
-                  VALUES (:username, :email, :password_hash, :full_name, :phone, :role, :status)";
+        $columns = 'Username, Email, PasswordHash, FullName, Phone, Role, Status';
+        $values = ':username, :email, :password_hash, :full_name, :phone, :role, :status';
+        if ($requiresVerification) {
+            $columns .= ', RegistrationVerificationRequired';
+            $values .= ', 1';
+        }
+        $query = "INSERT INTO " . $this->table . " ({$columns}) VALUES ({$values})";
 
         $stmt = $this->conn->prepare($query);
 
@@ -137,7 +248,7 @@ class User
         $stmt->bindParam(":status", $status);
 
         if ($stmt->execute()) {
-            return $this->conn->lastInsertId();
+            return (int)$this->conn->lastInsertId();
         }
 
         return false;
@@ -152,9 +263,12 @@ class User
      */
     public function getUserById($userId)
     {
-        $query = "SELECT UserID, Username, Email, FullName, Phone, Role, CreatedAt, Status, UpdatedAt 
-                  FROM " . $this->table . " 
-                  WHERE UserID = :user_id 
+        $verificationFields = $this->supportsEmailVerificationFields()
+            ? 'EmailVerifiedAt, PendingEmail, EmailGraceUntil, RegistrationVerificationRequired, SmsVerifiedAt, '
+            : '';
+        $query = "SELECT UserID, Username, Email, {$verificationFields}Phone, FullName, Role, CreatedAt, Status, UpdatedAt
+                  FROM " . $this->table . "
+                  WHERE UserID = :user_id
                   LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
@@ -182,8 +296,37 @@ class User
             throw new Exception("Invalid email format");
         }
 
-        $fields = ["Email = :email", "FullName = :full_name", "Phone = :phone"];
-        $params = [':email' => $email, ':full_name' => $fullName, ':phone' => $phone, ':user_id' => $userId];
+        $existing = $this->getUserById((int)$userId);
+        if (!$existing) {
+            return false;
+        }
+        require_once __DIR__ . '/../helpers/SmsVerificationService.php';
+        $emailChanged = strcasecmp(trim((string)$existing['Email']), trim((string)$email)) !== 0;
+        if ($emailChanged && !$this->supportsEmailVerificationFields()) {
+            throw new RuntimeException('Email changes require the verification migration.');
+        }
+
+        $normalizedPhone = SmsVerificationService::normalizePhoneNumber($phone);
+        $registrationVerificationRequired = !empty($existing['RegistrationVerificationRequired']);
+        if ($registrationVerificationRequired && !preg_match('/^0[6-8]\d{8}$/', $normalizedPhone)) {
+            throw new InvalidArgumentException('A valid South African mobile number is required.');
+        }
+        if (preg_match('/^0[6-8]\d{8}$/', $normalizedPhone)) {
+            $phone = $normalizedPhone;
+        }
+        $fields = ["FullName = :full_name", "Phone = :phone"];
+        $params = [':full_name' => $fullName, ':phone' => $phone, ':user_id' => $userId];
+        if ($emailChanged) {
+            require_once __DIR__ . '/../helpers/EmailVerificationService.php';
+            $verification = new EmailVerificationService($this->conn);
+            $verification->assertEmailNotTakenByAnotherAccount((int)$userId, $email);
+            $fields[] = 'PendingEmail = :pending_email';
+            $params[':pending_email'] = EmailVerificationService::normalizeEmail($email);
+        }
+        $phoneChanged = SmsVerificationService::normalizePhoneNumber($existing['Phone'] ?? '') !== $normalizedPhone;
+        if ($phoneChanged && $this->supportsEmailVerificationFields()) {
+            $fields[] = 'SmsVerifiedAt = NULL';
+        }
         if ($role !== null) {
             $fields[] = "Role = :role";
             $params[':role'] = $role;
@@ -193,6 +336,7 @@ class User
             $params[':status'] = $status;
         }
 
+        $fields[] = 'UpdatedAt = CURRENT_TIMESTAMP';
         $stmt = $this->conn->prepare("UPDATE " . $this->table . " SET " . implode(', ', $fields) . " WHERE UserID = :user_id");
         return $stmt->execute($params);
     }

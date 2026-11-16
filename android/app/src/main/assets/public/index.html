@@ -36,11 +36,23 @@
     .login-slide.is-active { opacity: 1; visibility: visible; z-index: 1; transition-delay: 0s; }
     .login-slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
     .login-carousel::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(9,25,31,.3), transparent 36%, rgba(9,25,31,.64)); }
+    .login-carousel-brand, .login-carousel-caption, .login-carousel-controls { position: absolute; z-index: 3; }
     .login-carousel-brand { position: absolute; z-index: 3; }
     .login-carousel-brand { top: 28px; left: 30px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
     .login-carousel-brand img { width: 54px; height: 42px; padding: 4px; object-fit: contain; border-radius: 9px; background: rgba(255,255,255,.92); }
     .login-carousel-brand strong, .login-carousel-brand span { display: block; }
     .login-carousel-brand span { margin-top: 2px; font-size: 12px; color: rgba(255,255,255,.84); }
+    .login-carousel-caption { left: 30px; bottom: 74px; max-width: min(75%, 520px); }
+    .login-carousel-caption h1 { font-size: clamp(22px, 2.5vw, 34px); line-height: 1.15; margin-bottom: 8px; }
+    .login-carousel-caption p { font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.9); }
+    .login-carousel-controls { left: 30px; bottom: 25px; display: flex; align-items: center; gap: 9px; }
+    .login-carousel-arrow, .login-carousel-dot { display: inline-flex; align-items: center; justify-content: center; color: white; cursor: pointer; border: 1px solid rgba(255,255,255,.58); background: rgba(255,255,255,.22); }
+    .login-carousel-arrow { width: 34px; height: 34px; border-radius: 50%; font-size: 20px; }
+    .login-carousel-dots { display: flex; align-items: center; gap: 7px; margin: 0 3px; }
+    .login-carousel-dot { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 10px; opacity: .72; transition: width 180ms ease, opacity 180ms ease; }
+    .login-carousel-dot[aria-current="true"] { width: 27px; opacity: 1; background: white; }
+    .login-carousel-arrow:focus-visible, .login-carousel-dot:focus-visible { outline: 3px solid rgba(255,255,255,.75); outline-offset: 3px; }
+    @media (prefers-reduced-motion: reduce) { .login-slide, .login-carousel-dot { transition: none; } }
     @media (prefers-reduced-motion: reduce) { .login-slide { transition: none; } }
     .login-logo { margin-bottom: 24px; text-align: center; }
     .login-logo img { width: 96px; height: 96px; border-radius: 20px; object-fit: cover; }
@@ -57,6 +69,9 @@
     .register-link { text-align: center; margin-top: 12px; font-size: 14px; }
     .register-link a { color: var(--primary-blue); font-weight: 600; cursor: pointer; text-decoration: none; }
     .register-link a:hover { text-decoration: underline; }
+    .google-native-button { width: 100%; margin-top: 12px; padding: 11px 16px; border: 1px solid var(--border-color); border-radius: 8px; background: white; color: var(--text-main); font-size: 14px; font-weight: 600; cursor: pointer; }
+    .google-native-button:disabled { opacity: .65; cursor: wait; }
+    .google-button-wrap { display: flex; justify-content: center; margin-top: 12px; }
     .footer-copy { text-align: center; font-size: 11px; color: #98a2b3; line-height: 1.5; padding: 20px 12px 0; flex-shrink: 0; }
     @media (max-width: 760px) {
       #login-view { flex-direction: column; }
@@ -64,6 +79,10 @@
       .login-center { flex: 1 0 auto; width: 100%; padding: 18px 20px 24px; overflow: visible; }
       .login-content { max-width: 420px; }
       .login-carousel-brand { top: 18px; left: 20px; }
+      .login-carousel-caption { left: 20px; bottom: 64px; max-width: 82%; }
+      .login-carousel-caption h1 { font-size: 23px; }
+      .login-carousel-caption p { font-size: 13px; }
+      .login-carousel-controls { left: 20px; bottom: 17px; }
     }
     .drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; backdrop-filter: blur(2px); }
     .drawer { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: var(--white); z-index: 2001; transition: 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
@@ -206,6 +225,19 @@
       <img src="img/icon.png" alt="">
       <div><strong>Tharimpepe</strong><span>Feeding Scheme</span></div>
     </div>
+    <div class="login-carousel-caption" aria-live="polite" aria-atomic="true">
+      <h1 data-slide-title>Our community, growing together</h1>
+      <p data-slide-copy>Working together to make every meal count.</p>
+    </div>
+    <div class="login-carousel-controls">
+      <button class="login-carousel-arrow" type="button" data-carousel-prev aria-label="Previous image">&#8249;</button>
+      <div class="login-carousel-dots" role="group" aria-label="Choose a community story">
+        <button class="login-carousel-dot" type="button" aria-label="Show community story 1" aria-current="true" data-carousel-dot="0"></button>
+        <button class="login-carousel-dot" type="button" aria-label="Show community story 2" aria-current="false" data-carousel-dot="1"></button>
+        <button class="login-carousel-dot" type="button" aria-label="Show community story 3" aria-current="false" data-carousel-dot="2"></button>
+      </div>
+      <button class="login-carousel-arrow" type="button" data-carousel-next aria-label="Next image">&#8250;</button>
+    </div>
   </section>
   <div class="login-center">
     <div class="login-content">
@@ -235,6 +267,9 @@
         </div>
       </div>
       <button class="btn-blue" id="login-btn" onclick="doLogin()">Login</button>
+      <button class="google-native-button" id="google-login-native" type="button" onclick="doGoogleLogin()" style="display:none;">Continue with Google</button>
+      <div id="google-login-web" class="google-button-wrap"></div>
+      <p id="google-login-status" role="alert" style="color:var(--danger-red);font-size:13px;text-align:center;margin-top:8px;display:none;"></p>
       <div class="forgot-pwd">Forgot password? Contact administrator</div>
       <div class="register-link">Don't have an account? <a onclick="openRegisterModal()">Create one</a></div>
       <a class="btn-sm primary" style="display:block;text-align:center;margin-top:14px;text-decoration:none;" onclick="openQuickDonate()">Quick Donate as Guest</a>
@@ -249,6 +284,7 @@
     <h3>Create Account</h3>
     <p class="sub-text" style="text-align:left;margin-bottom:16px;">Register as a volunteer to access the system.</p>
     <p id="register-error" style="color:var(--danger-red);font-size:13px;text-align:center;margin-bottom:12px;display:none;"></p>
+    <div id="register-form-fields">
     <div class="form-group">
       <label>Full name *</label>
       <input type="text" id="reg-name" placeholder="e.g. Thabo Molefe">
@@ -262,8 +298,8 @@
       <input type="text" id="reg-username" placeholder="Choose a username">
     </div>
     <div class="form-group">
-      <label>Phone</label>
-      <input type="text" id="reg-phone" placeholder="0XX XXX XXXX">
+      <label>South African mobile number *</label>
+      <input type="tel" id="reg-phone" placeholder="0XX XXX XXXX" required>
     </div>
     <div class="form-group">
       <label>Password *</label>
@@ -274,6 +310,17 @@
       <input type="password" id="reg-confirm" placeholder="Repeat password">
     </div>
     <button class="btn-blue" id="register-btn" onclick="doRegister()">Create Account</button>
+    </div>
+    <div id="register-verification" style="display:none;">
+      <p class="text-muted">Enter the code sent to your email and phone. You must verify both before sign-in; admin approval is separate.</p>
+      <div class="form-group"><label>Email code</label><input id="reg-email-token" type="text" autocomplete="one-time-code"></div>
+      <button class="btn-sm primary" onclick="verifyRegistrationEmail()">Verify email</button>
+      <button class="btn-sm" onclick="resendRegistrationEmail()">Resend email code</button>
+      <div class="form-group" style="margin-top:16px;"><label>SMS code</label><input id="reg-sms-otp" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
+      <button class="btn-sm primary" onclick="verifyRegistrationSms()">Verify phone</button>
+      <button class="btn-sm" onclick="resendRegistrationSms()">Resend SMS code</button>
+      <p id="registration-verification-status" class="text-muted" style="margin-top:14px;"></p>
+    </div>
     <div class="forgot-pwd" style="margin-top:12px;">Already have an account? <a onclick="closeRegisterModal()" style="color:var(--primary-blue);font-weight:600;cursor:pointer;">Sign in</a></div>
   </div>
 </div>
@@ -416,8 +463,8 @@
         <div class="flex-row gap-4" style="margin-bottom:12px;flex-wrap:wrap;"><button class="btn-sm primary" onclick="showCreateDonorAccount()">Create Donor Account</button><label style="display:flex;align-items:center;gap:8px;margin:0;"><input type="checkbox" id="don-anonymous" onchange="toggleAnonymousDonation()"> Donate anonymously</label></div>
         <div class="form-group" id="donor-name-group"><label>Donor name *</label><input type="text" id="don-donor" placeholder="e.g. Shoprite Checkers"></div>
         <div class="form-group"><label>Donor email</label><input type="email" id="don-email" placeholder="donor@example.com"></div>
-        <div class="form-group"><label>Donation type *</label><select id="don-type"><option value="cash">Cash</option><option value="food">Food</option><option value="supplies">Supplies</option><option value="other">Other</option></select></div>
-        <div class="form-group"><label>Amount (for cash donations)</label><input type="number" step="0.01" id="don-amount" placeholder="e.g. 500.00"></div>
+        <div class="form-group"><label>Donation type *</label><select id="don-type"><option value="cash">Monetary donation (PayFast)</option></select></div>
+        <div class="form-group"><label>Amount *</label><input type="number" step="0.01" min="1" id="don-amount" placeholder="e.g. 500.00"></div>
         <div class="form-group"><label>Description</label><textarea id="don-desc" placeholder="Describe the donation"></textarea></div>
         <div class="form-group"><label>Date *</label><input type="date" id="don-date"></div>
         <button class="btn-blue" onclick="recordDonation()">Record Donation</button>
@@ -497,6 +544,11 @@
     <!-- USERS -->
     <div class="screen" id="screen-users">
       <div class="card">
+        <div class="section-title">Pending Registrations <span class="badge badge-warning" id="pending-users-count">0</span></div>
+        <p class="text-muted mb-8">Review new accounts and approve or reject each registration.</p>
+        <div id="users-pending-list"><div class="loading">Loading registrations</div></div>
+      </div>
+      <div class="card">
         <div class="section-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> User Management</div>
         <p class="text-muted mb-8">Manage system users and review their roles and status.</p>
         <button class="btn-blue" onclick="showCreateUser()" style="margin-bottom:12px;">Add User</button>
@@ -520,6 +572,23 @@
           <div id="profile-details"></div>
         </div>
         <div class="card">
+          <div class="section-title">Verification Status</div>
+          <div id="verification-status" class="text-muted mb-8">Checking account verification status…</div>
+          <div class="form-group"><label>Current email</label><input type="email" id="verify-current-email" readonly></div>
+          <div class="form-group"><label>New email for verification</label><input type="email" id="verify-new-email" placeholder="Enter a new email address"></div>
+          <div class="flex-row gap-4" style="flex-wrap:wrap;">
+            <button class="btn-sm primary" onclick="requestEmailVerification()">Request email verification</button>
+            <button class="btn-sm" onclick="showEmailVerificationPrompt()">Verify email token</button>
+          </div>
+          <div class="form-group"><label>Verification token</label><input type="text" id="verify-email-token" placeholder="Paste the email verification token"></div>
+          <div class="form-group"><label>Phone for SMS verification</label><input type="text" id="verify-phone" placeholder="0XX XXX XXXX"></div>
+          <div class="flex-row gap-4" style="flex-wrap:wrap;">
+            <button class="btn-sm primary" onclick="requestSmsVerification()">Request SMS OTP</button>
+            <button class="btn-sm" onclick="showOtpVerificationPrompt()">Verify OTP</button>
+          </div>
+          <div class="form-group"><label>SMS OTP</label><input type="text" id="verify-otp" placeholder="Enter 6-digit OTP" maxlength="6"></div>
+        </div>
+        <div class="card">
           <div class="section-title">Edit Profile</div>
           <div class="form-group"><label>Full name</label><input type="text" id="profile-full-name"></div>
           <div class="form-group"><label>Email</label><input type="email" id="profile-email"></div>
@@ -532,6 +601,13 @@
           <div class="form-group"><label>New password</label><input type="password" id="profile-new-password"></div>
           <div class="form-group"><label>Confirm new password</label><input type="password" id="profile-confirm-password"></div>
           <button class="btn-blue" onclick="savePassword()">Change Password</button>
+        </div>
+        <div class="card">
+          <div class="section-title">Google Sign-In</div>
+          <p class="text-muted mb-8">Link Google while signed in. Only the verified Google subject is linked; email addresses are not used to auto-link accounts.</p>
+          <button class="google-native-button" id="google-link-native" type="button" onclick="doGoogleLink()" style="display:none;">Link Google account</button>
+          <div id="google-link-web" class="google-button-wrap"></div>
+          <p id="google-link-status" role="status" style="font-size:13px;margin-top:8px;display:none;"></p>
         </div>
         <button class="btn-blue" onclick="doLogout()">Log Out</button>
       </div>
@@ -569,7 +645,9 @@
   </div>
 </div>
 
+<script src="js/config.local.js"></script>
 <script src="js/config.js"></script>
+<script src="js/google-auth.js"></script>
 <script>
 const API_BASE = FSMS_API_BASE;
 (() => {
@@ -577,6 +655,18 @@ const API_BASE = FSMS_API_BASE;
   if (!carousel) return;
 
   const slides = Array.from(carousel.querySelectorAll('[data-slide]'));
+  const dots = Array.from(carousel.querySelectorAll('[data-carousel-dot]'));
+  const title = carousel.querySelector('[data-slide-title]');
+  const copy = carousel.querySelector('[data-slide-copy]');
+  const captions = [
+    ['Our community, growing together', 'Working together to make every meal count.'],
+    ['Nourishment for brighter days', 'Fresh ingredients help us serve balanced meals.'],
+    ['Many hands, one caring community', 'Volunteers make the feeding scheme possible.']
+  ];
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let current = 0;
+  let timer = null;
+  let touchStartX = null;
   let current = 0;
   let timer = null;
 
@@ -587,6 +677,9 @@ const API_BASE = FSMS_API_BASE;
       slide.classList.toggle('is-active', active);
       slide.setAttribute('aria-hidden', String(!active));
     });
+    dots.forEach((dot, i) => dot.setAttribute('aria-current', String(i === current)));
+    title.textContent = captions[current][0];
+    copy.textContent = captions[current][1];
   }
 
   function stop() {
@@ -596,6 +689,27 @@ const API_BASE = FSMS_API_BASE;
 
   function start() {
     stop();
+    if (!reducedMotion.matches && !document.hidden && slides.length > 1) {
+      timer = window.setInterval(() => showSlide(current + 1), 6000);
+    }
+  }
+
+  carousel.querySelector('[data-carousel-prev]').addEventListener('click', () => { showSlide(current - 1); start(); });
+  carousel.querySelector('[data-carousel-next]').addEventListener('click', () => { showSlide(current + 1); start(); });
+  dots.forEach((dot) => dot.addEventListener('click', () => { showSlide(Number(dot.dataset.carouselDot)); start(); }));
+  carousel.addEventListener('mouseenter', stop);
+  carousel.addEventListener('mouseleave', start);
+  carousel.addEventListener('focusin', stop);
+  carousel.addEventListener('focusout', (event) => { if (!carousel.contains(event.relatedTarget)) start(); });
+  carousel.addEventListener('touchstart', (event) => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
+  carousel.addEventListener('touchend', (event) => {
+    if (touchStartX === null) return;
+    const delta = event.changedTouches[0].clientX - touchStartX;
+    touchStartX = null;
+    if (Math.abs(delta) > 45) { showSlide(current + (delta < 0 ? 1 : -1)); start(); }
+  }, { passive: true });
+  document.addEventListener('visibilitychange', start);
+  if (reducedMotion.addEventListener) reducedMotion.addEventListener('change', start);
     if (!document.hidden && slides.length > 1) {
       timer = window.setInterval(() => showSlide(current + 1), 6000);
     }
@@ -604,8 +718,14 @@ const API_BASE = FSMS_API_BASE;
   showSlide(0);
   start();
 })();
-let AUTH_TOKEN = localStorage.getItem('fsms_token') || '';
+let AUTH_TOKEN = '';
 let CURRENT_USER = null;
+let PENDING_REGISTRATION = null;
+try {
+  PENDING_REGISTRATION = JSON.parse(sessionStorage.getItem('fsms_pending_registration') || 'null');
+} catch (e) {
+  PENDING_REGISTRATION = null;
+}
 let attendanceData = {};
 let currentBenTab = 'list';
 let currentAttTab = 'mark';
@@ -669,6 +789,7 @@ async function api(method, path, body) {
   if (!data.success && res.status === 401) {
     localStorage.removeItem('fsms_token');
     AUTH_TOKEN = '';
+    window.FsmsGoogleAuth.clearToken().catch(() => {});
     document.getElementById('login-view').classList.add('active');
     document.getElementById('app-view').classList.remove('active');
     toast('Session expired. Please login again.', 'error');
@@ -695,6 +816,7 @@ async function doLogin() {
   try {
     const res = await api('POST', 'login', { username, password });
     if (res.success) {
+      await completeLogin(res.data);
       AUTH_TOKEN = res.data.token;
       CURRENT_USER = res.data.user;
       localStorage.setItem('fsms_token', AUTH_TOKEN);
@@ -719,6 +841,17 @@ async function doLogin() {
 }
 
 async function doLogout() {
+  let revoked = true;
+  try {
+    if (AUTH_TOKEN) await api('POST', 'logout');
+  } catch (error) {
+    revoked = false;
+  } finally {
+    localStorage.removeItem('fsms_token');
+    localStorage.removeItem('fsms_user');
+    await window.FsmsGoogleAuth.clearToken().catch(() => {});
+    AUTH_TOKEN = '';
+    CURRENT_USER = null;
   try {
     if (AUTH_TOKEN) await api('POST', 'logout');
   } catch (e) {
@@ -733,12 +866,144 @@ async function doLogout() {
     document.getElementById('login-view').classList.add('active');
     toggleDrawer();
   }
+  clearLoginCredentials();
+  if (!revoked) {
+    toast('Signed out locally, but the server could not revoke this token. It will expire automatically.', 'error');
+  }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+async function completeLogin(data) {
+  AUTH_TOKEN = data.token;
+  CURRENT_USER = data.user;
+  if (window.FsmsGoogleAuth.isNative) {
+    await window.FsmsGoogleAuth.setToken(AUTH_TOKEN);
+    localStorage.removeItem('fsms_token');
+  } else {
+    localStorage.setItem('fsms_token', AUTH_TOKEN);
+  }
+  localStorage.setItem('fsms_user', JSON.stringify(CURRENT_USER));
+  document.getElementById('drawer-users').style.display = CURRENT_USER.role === 'admin' ? 'flex' : 'none';
+  document.getElementById('login-view').classList.remove('active');
+  document.getElementById('app-view').classList.add('active');
+  document.getElementById('drawer-name').textContent = CURRENT_USER.username;
+  document.getElementById('drawer-role').textContent = CURRENT_USER.role + ' • FSMS';
+  document.getElementById('google-login-status').style.display = 'none';
+  clearLoginCredentials();
+  loadDashboard();
+}
+
+async function doGoogleLogin() {
+  const status = document.getElementById('google-login-status');
+  const button = document.getElementById('google-login-native');
+  status.style.display = 'none';
+  button.disabled = true;
+  button.textContent = 'Connecting to Google...';
+  try {
+    const result = await window.FsmsGoogleAuth.authenticateNative(API_BASE, 'login', null);
+    await completeLogin(result.data);
+  } catch (error) {
+    status.textContent = error.message || 'Google Sign-In is temporarily unavailable.';
+    status.style.display = 'block';
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Continue with Google';
+  }
+}
+
+async function doGoogleLink() {
+  const status = document.getElementById('google-link-status');
+  const button = document.getElementById('google-link-native');
+  status.style.display = 'none';
+  button.disabled = true;
+  button.textContent = 'Connecting to Google...';
+  try {
+    const result = await window.FsmsGoogleAuth.authenticateNative(API_BASE, 'link', AUTH_TOKEN);
+    status.textContent = result.message || 'Google account linked successfully.';
+    status.style.color = 'var(--success-green)';
+    status.style.display = 'block';
+  } catch (error) {
+    status.textContent = error.message || 'Google account linking is temporarily unavailable.';
+    status.style.color = 'var(--danger-red)';
+    status.style.display = 'block';
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Link Google account';
+  }
+}
+
+async function initializeGoogleButtons() {
+  const loginNative = document.getElementById('google-login-native');
+  const linkNative = document.getElementById('google-link-native');
+  if (window.FsmsGoogleAuth.isNative) {
+    loginNative.style.display = 'block';
+    linkNative.style.display = 'block';
+    return;
+  }
+  await window.FsmsGoogleAuth.renderWebButton(
+    API_BASE,
+    document.getElementById('google-login-web'),
+    'login',
+    null,
+    async (result) => completeLogin(result.data),
+    (error) => {
+      const status = document.getElementById('google-login-status');
+      status.textContent = error.message || 'Google Sign-In is temporarily unavailable.';
+      status.style.display = 'block';
+    }
+  );
+}
+
+async function configureGoogleLinkButton() {
+  const status = document.getElementById('google-link-status');
+  if (window.FsmsGoogleAuth.isNative) return;
+  await window.FsmsGoogleAuth.renderWebButton(
+    API_BASE,
+    document.getElementById('google-link-web'),
+    'link',
+    AUTH_TOKEN,
+    (result) => {
+      status.textContent = result.message || 'Google account linked successfully.';
+      status.style.color = 'var(--success-green)';
+      status.style.display = 'block';
+    },
+    (error) => {
+      status.textContent = error.message || 'Google account linking is temporarily unavailable.';
+      status.style.color = 'var(--danger-red)';
+      status.style.display = 'block';
+    }
+  );
+}
+
+async function restoreSession() {
+  const legacyToken = localStorage.getItem('fsms_token') || '';
+  if (window.FsmsGoogleAuth.isNative) {
+    const stored = await window.FsmsGoogleAuth.getToken();
+    AUTH_TOKEN = stored.token || '';
+    if (!AUTH_TOKEN && legacyToken) {
+      await window.FsmsGoogleAuth.setToken(legacyToken);
+      AUTH_TOKEN = legacyToken;
+    }
+    localStorage.removeItem('fsms_token');
+  } else {
+    AUTH_TOKEN = legacyToken;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('ben-regdate').valueAsDate = new Date();
   document.getElementById('att-date').valueAsDate = new Date();
   document.getElementById('don-date').valueAsDate = new Date();
+  document.getElementById('google-link-native').style.display = window.FsmsGoogleAuth.isNative ? 'block' : 'none';
+
+  try {
+    await restoreSession();
+  } catch (error) {
+    AUTH_TOKEN = '';
+    await window.FsmsGoogleAuth.clearToken().catch(() => {});
+    document.getElementById('google-login-status').textContent = error.message;
+    document.getElementById('google-login-status').style.display = 'block';
+  }
+  await initializeGoogleButtons();
 
   if (AUTH_TOKEN) {
     try { CURRENT_USER = JSON.parse(localStorage.getItem('fsms_user') || 'null'); } catch (e) { CURRENT_USER = null; }
@@ -751,22 +1016,26 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('login-error').style.display = 'block';
     document.getElementById('login-error').style.color = 'var(--text-muted)';
 
-    api('GET', 'dashboard').then(res => {
+    api('GET', 'dashboard').then(async (res) => {
       if (res.success) {
         document.getElementById('login-view').classList.remove('active');
         document.getElementById('app-view').classList.add('active');
-        document.getElementById('drawer-name').textContent = 'User';
-        document.getElementById('drawer-role').textContent = 'Staff • FSMS';
+        document.getElementById('drawer-name').textContent = CURRENT_USER?.username || 'User';
+        document.getElementById('drawer-role').textContent = (CURRENT_USER?.role || 'staff') + ' • FSMS';
         showScreen('dashboard');
       } else {
-        localStorage.removeItem('fsms_token');
         AUTH_TOKEN = '';
+        localStorage.removeItem('fsms_token');
+        await window.FsmsGoogleAuth.clearToken().catch(() => {});
         document.getElementById('login-error').style.display = 'none';
       }
     }).catch(() => {
       localStorage.removeItem('fsms_token');
       AUTH_TOKEN = '';
+      window.FsmsGoogleAuth.clearToken().catch(() => {});
     });
+  } else {
+    localStorage.removeItem('fsms_user');
   }
 
   document.getElementById('login-user').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -781,6 +1050,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function openRegisterModal() {
   document.getElementById('register-error').style.display = 'none';
+  document.getElementById('register-form-fields').style.display = PENDING_REGISTRATION ? 'none' : 'block';
+  document.getElementById('register-verification').style.display = PENDING_REGISTRATION ? 'block' : 'none';
+  if (PENDING_REGISTRATION) {
+    document.getElementById('registration-verification-status').textContent =
+      `Email: ${PENDING_REGISTRATION.emailVerified ? 'verified' : 'not verified'}; ` +
+      `phone: ${PENDING_REGISTRATION.smsVerified ? 'verified' : 'not verified'}.`;
+  }
   document.getElementById('register-overlay').classList.add('active');
 }
 
@@ -798,8 +1074,8 @@ async function doRegister() {
   const errEl = document.getElementById('register-error');
   const btn = document.getElementById('register-btn');
 
-  if (!name || !email || !username || !password || !confirm) {
-    errEl.textContent = 'Please fill in all required fields';
+  if (!name || !email || !username || !phone || !password || !confirm) {
+    errEl.textContent = 'Please complete all fields, including your South African mobile number.';
     errEl.style.display = 'block';
     return;
   }
@@ -829,6 +1105,22 @@ async function doRegister() {
       password
     });
     if (res.success) {
+      PENDING_REGISTRATION = {
+        id: res.data && res.data.UserID,
+        key: res.data && res.data.verification_key,
+        email,
+        phone,
+        emailVerified: false,
+        smsVerified: false
+      };
+      sessionStorage.setItem('fsms_pending_registration', JSON.stringify(PENDING_REGISTRATION));
+      document.getElementById('register-form-fields').style.display = 'none';
+      document.getElementById('register-verification').style.display = 'block';
+      const delivery = (res.data && res.data.verification) || {};
+      document.getElementById('registration-verification-status').textContent =
+        `Email: ${delivery.email || 'not sent'}; SMS: ${delivery.sms || 'not sent'}. ` +
+        'Use the resend buttons if delivery failed. Admin approval follows verification.';
+      toast('Account created. Verify your email and phone to continue.', 'success');
       toast('Account created! Your registration is pending admin approval. You will be able to log in once approved.', 'success');
       closeRegisterModal();
     } else {
@@ -841,6 +1133,71 @@ async function doRegister() {
   }
   btn.disabled = false;
   btn.textContent = 'Create Account';
+}
+
+async function verifyRegistrationEmail() {
+  if (!PENDING_REGISTRATION || !PENDING_REGISTRATION.id || !PENDING_REGISTRATION.key) return;
+  const token = document.getElementById('reg-email-token').value.trim();
+  if (!token) { toast('Enter the email code.', 'error'); return; }
+  const res = await api('POST', 'auth/registration-email-verify', {
+    user_id: PENDING_REGISTRATION.id,
+    verification_key: PENDING_REGISTRATION.key,
+    token
+  });
+  if (res.success) {
+    PENDING_REGISTRATION.emailVerified = true;
+    sessionStorage.setItem('fsms_pending_registration', JSON.stringify(PENDING_REGISTRATION));
+    document.getElementById('registration-verification-status').textContent =
+      `Email verified. Phone: ${PENDING_REGISTRATION.smsVerified ? 'verified' : 'not verified'}.`;
+    toast('Email verified.', 'success');
+    finishRegistrationVerificationIfReady();
+  } else toast(res.message || 'Email verification failed.', 'error');
+}
+
+async function verifyRegistrationSms() {
+  if (!PENDING_REGISTRATION || !PENDING_REGISTRATION.id || !PENDING_REGISTRATION.key) return;
+  const otp = document.getElementById('reg-sms-otp').value.trim();
+  if (!otp) { toast('Enter the SMS code.', 'error'); return; }
+  const res = await api('POST', 'auth/registration-sms-verify', {
+    user_id: PENDING_REGISTRATION.id,
+    verification_key: PENDING_REGISTRATION.key,
+    otp
+  });
+  if (res.success) {
+    PENDING_REGISTRATION.smsVerified = true;
+    sessionStorage.setItem('fsms_pending_registration', JSON.stringify(PENDING_REGISTRATION));
+    document.getElementById('registration-verification-status').textContent =
+      `Email: ${PENDING_REGISTRATION.emailVerified ? 'verified' : 'not verified'}; phone verified. ` +
+      (PENDING_REGISTRATION.emailVerified ? 'Your account now awaits admin approval.' : 'Verify your email too.');
+    toast('Phone verified.', 'success');
+    finishRegistrationVerificationIfReady();
+  } else toast(res.message || 'Phone verification failed.', 'error');
+}
+
+function finishRegistrationVerificationIfReady() {
+  if (!PENDING_REGISTRATION || !PENDING_REGISTRATION.emailVerified || !PENDING_REGISTRATION.smsVerified) return;
+  sessionStorage.removeItem('fsms_pending_registration');
+  PENDING_REGISTRATION = null;
+  closeRegisterModal();
+  toast('Email and phone verified. Your registration now awaits administrator approval.', 'success');
+}
+
+async function resendRegistrationEmail() {
+  if (!PENDING_REGISTRATION || !PENDING_REGISTRATION.id || !PENDING_REGISTRATION.key) return;
+  const res = await api('POST', 'auth/registration-email-request', {
+    user_id: PENDING_REGISTRATION.id,
+    verification_key: PENDING_REGISTRATION.key
+  });
+  toast(res.message || (res.success ? 'Email code queued.' : 'Could not send email code.'), res.success ? 'success' : 'error');
+}
+
+async function resendRegistrationSms() {
+  if (!PENDING_REGISTRATION || !PENDING_REGISTRATION.id || !PENDING_REGISTRATION.key) return;
+  const res = await api('POST', 'auth/registration-sms-request', {
+    user_id: PENDING_REGISTRATION.id,
+    verification_key: PENDING_REGISTRATION.key
+  });
+  toast(res.message || (res.success ? 'SMS code queued.' : 'Could not send SMS code.'), res.success ? 'success' : 'error');
 }
 
 function toggleDrawer() {
@@ -1285,21 +1642,24 @@ async function recordDonation() {
   const data = {
     donor_name: anonymous ? 'Anonymous' : document.getElementById('don-donor').value.trim(),
     donor_email: document.getElementById('don-email').value.trim() || '',
-    donation_type: document.getElementById('don-type').value,
+    donation_type: 'cash',
     amount: parseFloat(document.getElementById('don-amount').value) || 0,
     description: document.getElementById('don-desc').value.trim() || '',
     donation_date: document.getElementById('don-date').value
   };
   if ((!anonymous && !data.donor_name) || !data.donation_date) { toast('Donor name and date required', 'error'); return; }
-  if (data.donation_type === 'cash' && data.amount <= 0) { toast('Enter a valid cash amount', 'error'); return; }
-  const res = await api('POST', 'donations', data);
-  if (res.success) {
-    toast('Donation recorded!', 'success');
-    ['don-donor','don-email','don-amount','don-desc'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('don-type').value = 'cash';
-    document.getElementById('don-date').valueAsDate = new Date();
-    loadDonations();
-  } else { toast(res.message, 'error'); }
+  if (data.amount <= 0) { toast('Enter a valid monetary amount greater than zero.', 'error'); return; }
+  try {
+    const res = await api('POST', 'donations/checkout', data);
+    if (res.success && res.data && res.data.checkout_url) {
+      toast('Redirecting to secure PayFast checkout...', 'success');
+      window.location.href = res.data.checkout_url;
+      return;
+    }
+    toast(res.message || 'Donation checkout could not be created.', 'error');
+  } catch (error) {
+    toast(error.message || 'Donation checkout failed.', 'error');
+  }
 }
 
 async function loadDonations() {
@@ -1614,25 +1974,75 @@ async function loadUsers() {
   }
   document.getElementById('users-loading').style.display = 'block';
   document.getElementById('users-list').style.display = 'none';
+  document.getElementById('users-pending-list').innerHTML = '<div class="loading">Loading registrations</div>';
   try {
     const res = await api('GET', 'users');
-    if (!res.success) { toast(res.message, 'error'); return; }
+    if (!res.success) {
+      document.getElementById('users-loading').style.display = 'none';
+      document.getElementById('users-pending-list').textContent = 'Unable to load pending registrations.';
+      toast(res.message, 'error');
+      return;
+    }
     usersCache = Array.isArray(res.data) ? res.data : [];
     renderUsers(usersCache);
     document.getElementById('users-loading').style.display = 'none';
     document.getElementById('users-list').style.display = 'block';
   } catch (e) {
     document.getElementById('users-loading').style.display = 'none';
+    document.getElementById('users-pending-list').textContent = 'Unable to load pending registrations.';
     toast('Failed to load users', 'error');
   }
 }
 
 function renderUsers(users) {
+    const pendingUsers = usersCache.filter(user => String(user.Status || '').toLowerCase() === 'pending');
+    document.getElementById('pending-users-count').textContent = String(pendingUsers.length);
+    document.getElementById('users-pending-list').innerHTML = pendingUsers.length ? pendingUsers.map(user => `
+      <div class="list-item" style="align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div style="min-width:0;flex:1;"><b>${escapeHtml(user.FullName || user.Username)}</b><div class="text-muted">@${escapeHtml(user.Username)}<br>${escapeHtml(user.Email)}</div></div>
+        <div style="width:100%;display:flex;gap:8px;">
+          <button class="btn-sm success" style="flex:1;" onclick="approveRegistration(${Number(user.UserID)})">Approve</button>
+          <button class="btn-sm danger" style="flex:1;" onclick="rejectRegistration(${Number(user.UserID)})">Reject</button>
+        </div>
+      </div>`).join('') : '<p class="text-muted">No pending registrations</p>';
     document.getElementById('users-list').innerHTML = users.length ? users.map(user => `
       <div class="list-item" style="align-items:flex-start;gap:12px;">
         <div style="min-width:0;"><b>${escapeHtml(user.FullName || user.Username)}</b><div class="text-muted">@${escapeHtml(user.Username)}<br>${escapeHtml(user.Email)}</div></div>
         <div style="text-align:right;white-space:nowrap;"><span class="badge badge-info">${escapeHtml(user.Role)}</span><br><span class="badge ${user.Status === 'active' ? 'badge-success' : 'badge-warning'}" style="margin-top:5px;">${escapeHtml(user.Status)}</span><br><button class="btn-sm" style="margin-top:6px;" onclick="editUser(${user.UserID})">Edit</button> ${user.UserID !== CURRENT_USER.id ? `<button class="btn-sm" style="margin-top:6px;" onclick="deactivateUser(${user.UserID})">Deactivate</button>` : ''}</div>
       </div>`).join('') : '<p class="text-muted">No users found</p>';
+}
+
+async function decideRegistration(id, decision) {
+  const pendingUser = usersCache.find(user => Number(user.UserID) === Number(id) && String(user.Status || '').toLowerCase() === 'pending');
+  if (!pendingUser) {
+    toast('This registration is no longer pending. Refreshing users.', 'error');
+    await loadUsers();
+    return;
+  }
+
+  const name = pendingUser.FullName || pendingUser.Username || 'this user';
+  const approved = decision === 'approve';
+  const prompt = approved
+    ? `Approve ${name}'s registration?`
+    : `Reject ${name}'s registration? Their account will be deactivated.`;
+  if (!window.confirm(prompt)) return;
+
+  const res = await api('POST', `users/${encodeURIComponent(id)}/${decision}`);
+  if (!res.success) {
+    toast(res.message || 'Unable to process registration', 'error');
+    await loadUsers();
+    return;
+  }
+  toast(approved ? 'User approved successfully' : 'Registration rejected', 'success');
+  await loadUsers();
+}
+
+function approveRegistration(id) {
+  return decideRegistration(id, 'approve');
+}
+
+function rejectRegistration(id) {
+  return decideRegistration(id, 'reject');
 }
 
 function filterUsers() {
@@ -1695,27 +2105,80 @@ async function loadProfile() {
     document.getElementById('profile-full-name').value = user.FullName || '';
     document.getElementById('profile-email').value = user.Email || '';
     document.getElementById('profile-phone').value = user.Phone || '';
+    document.getElementById('verify-current-email').value = user.Email || '';
+    document.getElementById('verify-new-email').value = user.PendingEmail || '';
+    document.getElementById('verify-phone').value = user.Phone || '';
+    const emailVerified = user.EmailVerifiedAt ? 'Verified' : 'Not verified';
+    const phoneVerified = user.SmsVerifiedAt ? 'Verified' : 'Not verified';
+    const pendingEmail = user.PendingEmail ? user.PendingEmail : 'None';
+    document.getElementById('verification-status').textContent = `Email: ${emailVerified} • Phone: ${phoneVerified} • Pending email: ${pendingEmail}`;
     const name = user.FullName || user.Username || CURRENT_USER.username;
     document.getElementById('profile-avatar').textContent = String(name).trim().charAt(0).toUpperCase() || 'U';
     document.getElementById('profile-name').textContent = name;
     document.getElementById('profile-role').textContent = (user.Role || CURRENT_USER.role || '').toUpperCase() + ' • FSMS';
     document.getElementById('profile-details').innerHTML = [
       ['Username', user.Username], ['Email', user.Email], ['Full name', user.FullName],
-      ['Phone', user.Phone], ['Status', user.Status], ['Created', user.CreatedAt]
+      ['Phone', user.Phone], ['Status', user.Status], ['Created', user.CreatedAt],
+      ['Email verified', user.EmailVerifiedAt || 'Not verified'], ['Phone verified', user.SmsVerifiedAt || 'Not verified'], ['Pending email', user.PendingEmail || 'None']
     ].map(([label, value]) => `<div class="list-item"><span class="text-muted">${label}</span><b>${escapeHtml(value || 'Not provided')}</b></div>`).join('');
     document.getElementById('profile-loading').style.display = 'none';
     document.getElementById('profile-content').style.display = 'block';
+    await configureGoogleLinkButton();
   } catch (e) {
     document.getElementById('profile-loading').style.display = 'none';
     toast('Failed to load profile', 'error');
   }
 }
 
+async function requestEmailVerification() {
+  const email = (document.getElementById('verify-new-email').value || document.getElementById('profile-email').value || '').trim();
+  if (!email) { toast('Enter an email address before requesting verification.', 'error'); return; }
+  const res = await api('POST', 'auth/email-request', { email });
+  if (res.success) { toast(res.message || 'Verification email sent.', 'success'); } else toast(res.message || 'Unable to send verification email.', 'error');
+}
+
+function showEmailVerificationPrompt() {
+  const token = window.prompt('Enter the email verification token sent to your inbox:');
+  if (!token) return;
+  document.getElementById('verify-email-token').value = token.trim();
+  verifyEmailToken();
+}
+
+async function verifyEmailToken() {
+  const email = (document.getElementById('verify-new-email').value || document.getElementById('verify-current-email').value || document.getElementById('profile-email').value || '').trim();
+  const token = document.getElementById('verify-email-token').value.trim();
+  if (!email || !token) { toast('Provide the email and verification token.', 'error'); return; }
+  const res = await api('POST', 'auth/email-verify', { email, token });
+  if (res.success) { toast(res.message || 'Email verified successfully.', 'success'); loadProfile(); } else toast(res.message || 'Email verification failed.', 'error');
+}
+
+async function requestSmsVerification() {
+  const phone = (document.getElementById('verify-phone').value || document.getElementById('profile-phone').value || '').trim();
+  if (!phone) { toast('Enter a phone number before requesting an OTP.', 'error'); return; }
+  const res = await api('POST', 'auth/sms-request', { phone });
+  if (res.success) { toast(res.message || 'SMS OTP sent.', 'success'); } else toast(res.message || 'Unable to send SMS OTP.', 'error');
+}
+
+function showOtpVerificationPrompt() {
+  const otp = window.prompt('Enter the 6-digit SMS OTP:');
+  if (!otp) return;
+  document.getElementById('verify-otp').value = otp.trim();
+  verifyOtp();
+}
+
+async function verifyOtp() {
+  const phone = (document.getElementById('verify-phone').value || document.getElementById('profile-phone').value || '').trim();
+  const otp = document.getElementById('verify-otp').value.trim();
+  if (!phone || !otp) { toast('Provide the phone number and OTP.', 'error'); return; }
+  const res = await api('POST', 'auth/sms-verify', { phone, otp });
+  if (res.success) { toast(res.message || 'Phone verified successfully.', 'success'); loadProfile(); } else toast(res.message || 'Phone verification failed.', 'error');
+}
+
 async function saveProfile() {
   const data = { full_name: document.getElementById('profile-full-name').value.trim(), email: document.getElementById('profile-email').value.trim(), phone: document.getElementById('profile-phone').value.trim() || null };
   if (!data.full_name || !data.email) { toast('Full name and email are required', 'error'); return; }
   const res = await api('PUT', 'users/' + CURRENT_USER.id, data);
-  if (res.success) { CURRENT_USER.fullName = data.full_name; localStorage.setItem('fsms_user', JSON.stringify(CURRENT_USER)); toast('Profile updated', 'success'); loadProfile(); } else toast(res.message, 'error');
+  if (res.success) { CURRENT_USER.fullName = data.full_name; localStorage.setItem('fsms_user', JSON.stringify(CURRENT_USER)); toast(res.message || 'Profile updated', 'success'); loadProfile(); } else toast(res.message, 'error');
 }
 
 async function savePassword() {

@@ -110,6 +110,9 @@ cd android
 
 The packaged Android app uses `https://192.168.18.73:8080/api`. The phone and computer must be on the same Wi-Fi network, and the HTTPS proxy must be running and reachable on port 8080. Android trusts the local certificate from `android/app/src/main/res/raw/fsms_local_dev_ca.pem`.
 
+To use a different HTTPS API host (for example a private Tailscale Serve address), copy `www/js/config.local.example.js` to the ignored `www/js/config.local.js` and set `window.FSMS_API_BASE_URL`. Then run `npm run mobile:copy` and rebuild. The local configuration is included in the generated Android app bundle and should not be committed.
+
+If the computer's LAN IP, proxy port, or HTTPS certificate changes, update the API configuration and `android/app/src/main/res/raw/fsms_local_dev_ca.pem`, then run `npm run mobile:copy` and rebuild.
 If the computer's LAN IP, proxy port, or HTTPS certificate changes, update `www/js/config.js` and `android/app/src/main/res/raw/fsms_local_dev_ca.pem`, then run `npm run mobile:copy` and rebuild.
 
 Install on a connected device:
@@ -142,9 +145,15 @@ php tests\run_all_tests.php
 
 ## API
 
-The REST API is served at `http://localhost:8080/api`:
+The REST API is served by the PHP backend at the configured API base URL:
 
 - `POST /api/login` / `POST /api/register` — authentication
+- `POST /api/auth/google/challenge` / `POST /api/auth/google` — Google Sign-In
+- `POST /api/auth/google/link-challenge` / `POST /api/auth/google/link` — link Google to an existing account
+- `POST /api/auth/email-request` / `POST /api/auth/email-verify` — authenticated email verification and pending email changes
+- `POST /api/auth/sms-request` / `POST /api/auth/sms-verify` — authenticated phone verification
+- `POST /api/auth/registration-email-request` / `POST /api/auth/registration-email-verify` — pre-login registration email verification
+- `POST /api/auth/registration-sms-request` / `POST /api/auth/registration-sms-verify` — pre-login registration SMS verification
 - `GET|POST /api/beneficiaries` — beneficiary CRUD
 - `POST /api/attendance` — bulk attendance
 - `GET|POST /api/stock` — food stock
@@ -152,8 +161,13 @@ The REST API is served at `http://localhost:8080/api`:
 - `GET|POST /api/volunteers` — volunteers
 - `GET /api/dashboard` — summary KPIs
 - `GET /api/reports?type=summary|attendance|donations|food_stock|beneficiaries|volunteers` — reports
+- `POST /api/users/{id}/approve` / `POST /api/users/{id}/reject` — admin account review
 
-All endpoints (except login/register) require a `Bearer` token returned from login.
+Google Sign-In requires Composer dependencies, Google client configuration, and the additive migrations described in [Google Sign-In setup](docs/GOOGLE_SIGNIN.md). Account approval on an existing database also requires `sql/migrations/20261109_add_volunteer_registration_status.sql`.
+
+Login, registration, registration verification, and Google Sign-In challenge/login endpoints are public. Google account linking, profile verification, and other protected endpoints require a `Bearer` token returned from login.
+
+Email and SMS trial provider setup and the end-to-end verification flow are documented in [Email and SMS verification testing](docs/EMAIL_SMS_VERIFICATION.md).
 
 ## Project Rules
 

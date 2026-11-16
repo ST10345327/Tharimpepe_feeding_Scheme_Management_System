@@ -1,4 +1,95 @@
 <?php
+function handleDonationCheckout() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        apiJsonResponse(false, 'Method not allowed', null, 405);
+    }
+
+    $input = getJsonInput();
+    validateRequired($input, ['donor_name', 'amount', 'donation_date']);
+
+    $amount = (float)($input['amount'] ?? 0);
+    if ($amount <= 0) {
+        apiJsonResponse(false, 'Donation amount must be greater than zero.', null, 400);
+    }
+
+    $donationType = strtolower((string)($input['donation_type'] ?? 'cash'));
+    if ($donationType !== 'cash') {
+        apiJsonResponse(false, 'Only monetary cash donations are accepted via the active PayFast checkout.', null, 400);
+    }
+
+    $db = getDBConnection();
+    $donationModel = new Donation($db);
+    $donationResult = $donationModel->createDonation([
+        'DonorName' => trim((string)($input['donor_name'] ?? '')),
+        'DonorEmail' => trim((string)($input['donor_email'] ?? '')),
+        'DonationType' => 'cash',
+        'Amount' => $amount,
+        'Description' => trim((string)($input['description'] ?? '')),
+        'DonationDate' => trim((string)($input['donation_date'] ?? '')),
+    ]);
+
+    if (!$donationResult['success'] || empty($donationResult['id'])) {
+        apiJsonResponse(false, $donationResult['message'] ?? 'Could not create the donation record.', null, 500);
+    }
+
+    $reference = 'FSMS-' . strtoupper(bin2hex(random_bytes(6)));
+    $paymentService = new PayFastService($db);
+    $pending = $paymentService->createPendingDonation([
+        'donation_id' => (int)$donationResult['id'],
+        'merchant_reference' => $reference,
+        'reference' => $reference,
+        'amount' => $amount,
+        'currency' => strtoupper((string)($input['currency'] ?? 'ZAR')),
+    ]);
+
+    $returnUrl = getenv('PAYFAST_RETURN_URL') ?: 'https://localhost/fsms/public/index.php?action=donations_success';
+    $cancelUrl = getenv('PAYFAST_CANCEL_URL') ?: 'https://localhost/fsms/public/index.php?action=donations_cancel';
+    $notifyUrl = getenv('PAYFAST_NOTIFY_URL') ?: 'https://localhost/fsms/public/index.php?action=payfast_itn';
+
+    $checkoutUrl = PayFastService::hostedCheckoutUrl($returnUrl, $cancelUrl, $notifyUrl, $pending['reference'], $pending['amount'], $pending['currency']);
+
+    apiJsonResponse(true, 'PayFast hosted checkout created.', [
+        'donation_id' => (int)$donationResult['id'],
+        'payment_reference' => $pending['reference'],
+        'checkout_url' => $checkoutUrl,
+        'status' => 'pending',
+    ]);
+}
+
+function handleDonationPayfastItn() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo 'Method not allowed';
+        exit();
+    }
+
+    $db = getDBConnection();
+    $raw = file_get_contents('php://input');
+    $itn = [];
+    if (is_string($raw) && trim($raw) !== '') {
+        parse_str($raw, $itn);
+    }
+    if (empty($itn)) {
+        $itn = $_POST;
+    }
+    if (empty($itn)) {
+        http_response_code(400);
+        echo 'No PayFast payload received';
+        exit();
+    }
+
+    $service = new PayFastService($db);
+    $result = $service->processItn($itn);
+
+    http_response_code(200);
+    if ($result['status'] === 'successful') {
+        echo 'OK';
+    } else {
+        echo 'INVALID';
+    }
+    exit();
+}
+
 function handleDonations($method, $id) {
     // Donation submissions may be made by an authenticated operator or anonymously.
     // Reading and editing the donation register remains protected.

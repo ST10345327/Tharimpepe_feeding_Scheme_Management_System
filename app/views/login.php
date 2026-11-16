@@ -1,3 +1,7 @@
+<?php
+$googleWebClientId = getenv('GOOGLE_WEB_CLIENT_ID');
+$googleWebClientId = is_string($googleWebClientId) ? trim($googleWebClientId) : '';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -301,7 +305,7 @@
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="/index.php?action=login">
+                <form method="POST" action="/index.php?action=login" id="login-form">
                     <?php echo csrfTokenInput(); ?>
                     <div class="form-group">
                         <label for="username">Username</label>
@@ -337,6 +341,18 @@
 
                     <button type="submit" class="btn-login">Login</button>
                 </form>
+                <form method="POST" action="/index.php?action=google_login" id="google-login-form" hidden>
+                    <?php echo csrfTokenInput(); ?>
+                    <input type="hidden" name="google_credential" id="google-credential">
+                    <input type="hidden" name="google_nonce" id="google-nonce">
+                </form>
+
+                <?php if ($googleWebClientId !== ''): ?>
+                    <div class="text-center my-3" aria-hidden="true">or</div>
+                    <div id="google-login-error" class="alert-error" role="alert" style="display:none;"></div>
+                    <div id="google-signin-button" class="d-flex justify-content-center"
+                         data-client-id="<?php echo htmlspecialchars($googleWebClientId, ENT_QUOTES, 'UTF-8'); ?>"></div>
+                <?php endif; ?>
 
                 <div class="form-footer">
                     <a href="/index.php?action=register">Don't have an account? Register here</a>
@@ -351,6 +367,59 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <?php if ($googleWebClientId !== ''): ?>
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
+        <script>
+            (() => {
+                const container = document.getElementById('google-signin-button');
+                const error = document.getElementById('google-login-error');
+                const showError = (message) => {
+                    error.textContent = message;
+                    error.style.display = 'block';
+                };
+                const initialize = async () => {
+                    try {
+                        const response = await fetch('/api/auth/google/challenge', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: '{}'
+                        });
+                        const result = await response.json();
+                        if (!response.ok || !result.success) {
+                            throw new Error(result.message || 'Google Sign-In is unavailable.');
+                        }
+                        const waitForGoogle = () => {
+                            if (!window.google?.accounts?.id) {
+                                window.setTimeout(waitForGoogle, 50);
+                                return;
+                            }
+                            window.google.accounts.id.initialize({
+                                client_id: container.dataset.clientId,
+                                nonce: result.data.nonce,
+                                callback: (credential) => {
+                                    document.getElementById('google-credential').value = credential.credential;
+                                    document.getElementById('google-nonce').value = result.data.nonce;
+                                    document.getElementById('google-login-form').submit();
+                                }
+                            });
+                            window.google.accounts.id.renderButton(container, {
+                                type: 'standard',
+                                theme: 'outline',
+                                size: 'large',
+                                text: 'continue_with',
+                                shape: 'rectangular',
+                                width: 320
+                            });
+                        };
+                        waitForGoogle();
+                    } catch (e) {
+                        showError(e.message || 'Google Sign-In is temporarily unavailable.');
+                    }
+                };
+                initialize();
+            })();
+        </script>
+    <?php endif; ?>
     <script>
         (() => {
             const carousel = document.querySelector('[data-login-carousel]');

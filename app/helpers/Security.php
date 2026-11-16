@@ -1,4 +1,34 @@
 <?php
+function isHttpsTransport($server = null, $trustedProxies = null)
+{
+    $server = is_array($server) ? $server : $_SERVER;
+    $https = strtolower(trim((string)($server['HTTPS'] ?? '')));
+    if (!in_array($https, ['', 'off', '0', 'false'], true)) {
+        return true;
+    }
+
+    if ($trustedProxies === null) {
+        $trustedProxies = getenv('FSMS_TRUSTED_PROXIES') ?: '';
+    }
+    if (!is_array($trustedProxies)) {
+        $trustedProxies = explode(',', (string)$trustedProxies);
+    }
+    $trustedProxies = array_filter(array_map('trim', $trustedProxies), 'strlen');
+
+    $remoteAddress = trim((string)($server['REMOTE_ADDR'] ?? ''));
+    $forwardedProto = strtolower(trim((string)($server['HTTP_X_FORWARDED_PROTO'] ?? '')));
+    if (isLoopbackProxyAddress($remoteAddress)
+        && in_array($remoteAddress, $trustedProxies, true)
+        && $forwardedProto === 'https') {
+        return true;
+    }
+
+    return false;
+}
+
+function isLoopbackProxyAddress($address)
+{
+    return $address === '127.0.0.1' || $address === '::1';
 function isHttpsTransport()
 {
     $https = strtolower((string)($_SERVER['HTTPS'] ?? ''));
@@ -22,6 +52,9 @@ function requireHttpsTransport($jsonResponse = false)
 
     $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
     $isLoopback = preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/', $host) === 1;
+    $remoteAddress = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+    if (isHttpsTransport() ||
+        ($isLoopback && isLoopbackProxyAddress($remoteAddress) && getenv('FSMS_ALLOW_HTTP_LOCAL') === '1')) {
     if (isHttpsTransport() || ($isLoopback && getenv('FSMS_ALLOW_HTTP_LOCAL') === '1')) {
         return;
     }

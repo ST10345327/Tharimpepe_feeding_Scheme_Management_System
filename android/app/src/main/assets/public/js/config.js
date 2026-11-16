@@ -5,6 +5,9 @@ const FSMS_API_BASE = (() => {
     const configured = window.FSMS_API_BASE_URL || '';
 
     if (isNative) {
+        const apiBase = configured || 'https://192.168.18.73:8080/api';
+        if (!/^https:\/\//i.test(apiBase)) {
+            return '';
         // The local HTTPS proxy exposes the LAN API on port 8080.
         const apiBase = configured || 'https://192.168.18.73:8080/api';
         if (!/^https:\/\//i.test(apiBase)) {
@@ -16,6 +19,8 @@ const FSMS_API_BASE = (() => {
     const projectRoot = pathname.split('?')[0].split('#')[0]
         .replace(/\/(?:index\.(?:html|php))?$/, '')
         .replace(/\/(?:public|www)$/, '').replace(/\/+$/, '');
+    const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+    const secureOrigin = isLocal ? origin.replace(/\/+$/, '') : origin.replace(/^http:/i, 'https:').replace(/\/+$/, '');
     const secureOrigin = origin.replace(/^http:/i, 'https:').replace(/\/+$/, '');
     const apiBase = configured || secureOrigin + (projectRoot && projectRoot !== '/' ? projectRoot : '') + '/api';
     if (!/^https:\/\//i.test(apiBase)) {
