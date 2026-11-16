@@ -90,3 +90,142 @@ function handleLogout() {
     revokeApiToken($db, $user['ApiTokenID']);
     apiJsonResponse(true, 'Logout successful');
 }
+
+function googleAuthPayload($user, $token = null) {
+    $payload = [
+        'user' => [
+            'id' => (int)$user['UserID'],
+            'username' => $user['Username'],
+            'email' => $user['Email'],
+            'role' => $user['Role'],
+        ],
+    ];
+    if ($token !== null) {
+        $payload['token'] = $token['token'];
+        $payload['token_expires_at'] = $token['expires_at'];
+    }
+    return $payload;
+}
+
+function logGoogleAuthFailure($context, Throwable $exception) {
+    error_log('[FSMS Google Auth] ' . $context . ' (' . get_class($exception) . ')');
+}
+
+function handleGoogleAuth($method, $id, $subresource = null) {
+    if ($id !== 'google') {
+        apiJsonResponse(false, 'Authentication endpoint not found', null, 404);
+    }
+    if ($method !== 'POST') {
+        apiJsonResponse(false, 'Method not allowed', null, 405);
+    }
+
+    try {
+        $db = getDBConnection();
+    } catch (Throwable $e) {
+        logGoogleAuthFailure('Database unavailable', $e);
+        apiJsonResponse(false, 'Google Sign-In is temporarily unavailable.', null, 503);
+    }
+    $googleIdentity = new GoogleIdentityService($db);
+
+    if ($subresource === 'challenge') {
+        if (GoogleIdentityService::getWebClientId() === '') {
+            apiJsonResponse(false, 'Google Sign-In is not configured.', null, 503);
+        }
+        try {
+            $nonce = $googleIdentity->createNonce();
+            apiJsonResponse(true, 'Google authentication challenge created', [
+                'client_id' => GoogleIdentityService::getWebClientId(),
+                'nonce' => $nonce,
+            ]);
+        } catch (Throwable $e) {
+            logGoogleAuthFailure('Challenge creation failed', $e);
+            apiJsonResponse(false, 'Google Sign-In is temporarily unavailable.', null, 503);
+        }
+    }
+
+    if ($subresource === 'link-challenge') {
+        $user = requireAuth();
+        if (GoogleIdentityService::getWebClientId() === '') {
+            apiJsonResponse(false, 'Google Sign-In is not configured.', null, 503);
+        }
+        try {
+            $nonce = $googleIdentity->createNonce('link', (int)$user['UserID']);
+            apiJsonResponse(true, 'Google account-link challenge created', [
+                'client_id' => GoogleIdentityService::getWebClientId(),
+                'nonce' => $nonce,
+            ]);
+        } catch (Throwable $e) {
+            logGoogleAuthFailure('Link challenge creation failed', $e);
+            apiJsonResponse(false, 'Google account linking is temporarily unavailable.', null, 503);
+        }
+    }
+
+    $input = getJsonInput();
+    if ($subresource === 'link') {
+        $user = requireAuth();
+    } elseif ($subresource === null) {
+        $user = null;
+    } else {
+        apiJsonResponse(false, 'Authentication endpoint not found', null, 404);
+    }
+    validateRequired($input, ['id_token', 'nonce']);
+
+    if (GoogleIdentityService::getWebClientId() === '') {
+        apiJsonResponse(false, 'Google Sign-In is not configured.', null, 503);
+    }
+    try {
+        $claims = $googleIdentity->verifyIdToken($input['id_token'], $input['nonce']);
+    } catch (InvalidArgumentException $e) {
+        apiJsonResponse(false, 'Google authentication was rejected.', null, 401);
+    } catch (Throwable $e) {
+        logGoogleAuthFailure('ID-token verification failed', $e);
+        apiJsonResponse(false, 'Google Sign-In is temporarily unavailable.', null, 503);
+    }
+
+    try {
+        $nonceConsumed = $googleIdentity->consumeNonce(
+            $input['nonce'],
+            $subresource === 'link' ? 'link' : 'login',
+            $subresource === 'link' ? (int)$user['UserID'] : null
+        );
+    } catch (Throwable $e) {
+        logGoogleAuthFailure('Nonce validation failed', $e);
+        apiJsonResponse(false, 'Google Sign-In is temporarily unavailable.', null, 503);
+    }
+    if (!$nonceConsumed) {
+        apiJsonResponse(false, 'Google authentication challenge expired or was already used.', null, 401);
+    }
+
+    if ($subresource === 'link') {
+        try {
+            $googleIdentity->linkIdentity((int)$user['UserID'], $claims['sub']);
+        } catch (DomainException $e) {
+            apiJsonResponse(false, $e->getMessage(), null, 409);
+        } catch (Throwable $e) {
+            logGoogleAuthFailure('Identity link failed', $e);
+            apiJsonResponse(false, 'Unable to link this Google account.', null, 500);
+        }
+        apiJsonResponse(true, 'Google account linked successfully.');
+    }
+
+    try {
+        $linkedUser = $googleIdentity->findLinkedUser($claims['sub']);
+    } catch (Throwable $e) {
+        logGoogleAuthFailure('Linked account lookup failed', $e);
+        apiJsonResponse(false, 'Google Sign-In is temporarily unavailable.', null, 503);
+    }
+    if (!$linkedUser) {
+        apiJsonResponse(false, 'This Google account is not linked to an FSMS account. Sign in with your existing FSMS account and link Google first.', null, 403);
+    }
+    if ($linkedUser['Status'] !== 'active') {
+        apiJsonResponse(false, 'This FSMS account is not active. Please contact an administrator.', null, 403);
+    }
+
+    try {
+        $token = createApiToken($db, $linkedUser['UserID']);
+    } catch (Throwable $e) {
+        logGoogleAuthFailure('FSMS token creation failed', $e);
+        apiJsonResponse(false, 'Google Sign-In is temporarily unavailable.', null, 503);
+    }
+    apiJsonResponse(true, 'Google login successful', googleAuthPayload($linkedUser, $token));
+}

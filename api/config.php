@@ -16,6 +16,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../app/helpers/Exceptions.php';
 require_once __DIR__ . '/../app/helpers/ErrorHandler.php';
 require_once __DIR__ . '/../app/helpers/FormValidator.php';
+require_once __DIR__ . '/../app/helpers/GoogleIdentityService.php';
 
 require_once __DIR__ . '/../app/models/User.php';
 require_once __DIR__ . '/../app/models/Beneficiary.php';
@@ -185,6 +186,7 @@ function validateRequired($data, $fields) {
             $missing[] = $field;
         }
     }
+
     if (!empty($missing)) {
         apiJsonResponse(false, 'Missing required fields: ' . implode(', ', $missing), null, 400);
     }

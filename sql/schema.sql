@@ -45,6 +45,36 @@ CREATE TABLE IF NOT EXISTS ApiTokens (
     CONSTRAINT fk_api_tokens_user FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
 );
 
+-- Google identities are explicitly linked to existing FSMS user accounts.
+-- Single-use nonce hashes prevent replay of Google ID tokens at FSMS endpoints.
+CREATE TABLE IF NOT EXISTS GoogleIdentityLinks (
+    IdentityID BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    UserID INT NOT NULL,
+    Provider VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    Subject VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    CreatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_google_identity_provider_subject (Provider, Subject),
+    UNIQUE KEY uq_google_identity_provider_user (Provider, UserID),
+    KEY idx_google_identity_user (UserID),
+    CONSTRAINT fk_google_identity_user
+        FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS GoogleAuthChallenges (
+    NonceHash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+    Purpose VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'login',
+    UserID INT NULL,
+    SessionHash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    ExpiresAt DATETIME NOT NULL,
+    ConsumedAt DATETIME NULL,
+    CreatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_google_auth_challenge_expiry (ExpiresAt, ConsumedAt),
+    KEY idx_google_auth_challenge_user (UserID),
+    CONSTRAINT fk_google_auth_challenge_user
+        FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
+);
+
 -- ==============================================================
 -- HZ-LOG-TABLE-001
 -- Purpose: Store user activity logs for audit trail
@@ -76,6 +106,7 @@ CREATE TABLE IF NOT EXISTS Volunteers (
     Phone VARCHAR(15),
     Address TEXT,
     AvailabilityStatus ENUM('available', 'unavailable', 'on_leave') DEFAULT 'available',
+    Status ENUM('pending', 'approved', 'inactive') NOT NULL DEFAULT 'pending',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE
 );

@@ -6,6 +6,12 @@ The FSMS testing framework provides unit and integration testing capabilities fo
 
 ## Running Tests
 
+Install the PHP dependencies first:
+
+```bash
+composer install
+```
+
 ### Run All Tests
 ```bash
 php tests/run_all_tests.php

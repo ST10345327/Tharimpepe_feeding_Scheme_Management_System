@@ -1,8 +1,121 @@
 <?php
-function handleUsers($method, $id) {
+
+function transitionPendingRegistration(PDO $db, $userId, $decision, $actorUserId) {
+    $transitions = [
+        'approve' => ['user' => 'active', 'volunteer' => 'approved', 'availability' => 'available'],
+        'reject' => ['user' => 'inactive', 'volunteer' => 'inactive', 'availability' => 'unavailable'],
+    ];
+    if (!isset($transitions[$decision])) {
+        throw new InvalidArgumentException('Invalid registration decision');
+    }
+
+    $transition = $transitions[$decision];
+    $ownsTransaction = !$db->inTransaction();
+    if ($ownsTransaction) {
+        $db->beginTransaction();
+    }
+
+    try {
+        $userQuery = $db->prepare('SELECT UserID, Username, FullName, Phone, Role, Status FROM Users WHERE UserID = :user_id');
+        $userQuery->execute([':user_id' => $userId]);
+        $pendingUser = $userQuery->fetch(PDO::FETCH_ASSOC);
+        if (!$pendingUser || strtolower((string)$pendingUser['Status']) !== 'pending') {
+            if ($ownsTransaction) {
+                $db->rollBack();
+            }
+            return false;
+        }
+
+        $userUpdate = $db->prepare("UPDATE Users SET Status = :status, UpdatedAt = CURRENT_TIMESTAMP WHERE UserID = :user_id AND Status = 'pending'");
+        $userUpdate->execute([':status' => $transition['user'], ':user_id' => $userId]);
+        if ($userUpdate->rowCount() !== 1) {
+            if ($ownsTransaction) {
+                $db->rollBack();
+            }
+            return false;
+        }
+
+        if (strtolower((string)$pendingUser['Role']) === 'volunteer') {
+            $volunteerQuery = $db->prepare('SELECT VolunteerID FROM Volunteers WHERE UserID = :user_id LIMIT 1');
+            $volunteerQuery->execute([':user_id' => $userId]);
+            $volunteer = $volunteerQuery->fetch(PDO::FETCH_ASSOC);
+
+            if ($volunteer) {
+                $volunteerUpdate = $db->prepare('UPDATE Volunteers SET Status = :status, AvailabilityStatus = :availability WHERE VolunteerID = :volunteer_id');
+                $volunteerUpdate->execute([
+                    ':status' => $transition['volunteer'],
+                    ':availability' => $transition['availability'],
+                    ':volunteer_id' => $volunteer['VolunteerID'],
+                ]);
+            } elseif ($decision === 'approve') {
+                $fullName = trim((string)($pendingUser['FullName'] ?? ''));
+                if ($fullName === '') {
+                    $fullName = (string)$pendingUser['Username'];
+                }
+                $nameParts = preg_split('/\s+/', $fullName, 2);
+                $volunteerInsert = $db->prepare('INSERT INTO Volunteers (UserID, FirstName, LastName, Phone, Address, AvailabilityStatus, Status) VALUES (:user_id, :first_name, :last_name, :phone, NULL, :availability, :status)');
+                $volunteerInsert->execute([
+                    ':user_id' => $userId,
+                    ':first_name' => $nameParts[0] ?? $fullName,
+                    ':last_name' => $nameParts[1] ?? '',
+                    ':phone' => $pendingUser['Phone'],
+                    ':availability' => $transition['availability'],
+                    ':status' => $transition['volunteer'],
+                ]);
+            }
+        }
+
+        $activityLog = $db->prepare('INSERT INTO ActivityLog (UserID, Action, AffectedEntityName, AffectedEntityID, Details) VALUES (:actor_id, :action, :entity_name, :entity_id, :details)');
+        $activityLog->execute([
+            ':actor_id' => $actorUserId,
+            ':action' => $decision === 'approve' ? 'approve_user' : 'reject_user',
+            ':entity_name' => 'User',
+            ':entity_id' => $userId,
+            ':details' => $decision === 'approve' ? 'Approved user registration' : 'Rejected user registration',
+        ]);
+
+        if ($ownsTransaction) {
+            $db->commit();
+        }
+        return ['status' => $transition['user']];
+    } catch (Exception $e) {
+        if ($ownsTransaction && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $e;
+    }
+}
+
+function handleUsers($method, $id, $subresource = null) {
     $user = requireAuth();
     $db = getDBConnection();
     $model = new User($db);
+
+    if ($subresource !== null) {
+        requireApiRole($user, ['admin']);
+        if (!$id) {
+            apiJsonResponse(false, 'User ID is required', null, 400);
+        }
+        if ($method !== 'POST') {
+            apiJsonResponse(false, 'Method not allowed', null, 405);
+        }
+        if (!in_array($subresource, ['approve', 'reject'], true)) {
+            apiJsonResponse(false, 'User action not found', null, 404);
+        }
+
+        $result = transitionPendingRegistration($db, (int)$id, $subresource, (int)$user['UserID']);
+        if (!$result) {
+            apiJsonResponse(false, 'User not found or registration is no longer pending', null, 409);
+        }
+
+        $message = $subresource === 'approve'
+            ? 'User approved successfully. They can now log in.'
+            : 'User registration rejected';
+        apiJsonResponse(true, $message, [
+            'UserID' => (int)$id,
+            'Status' => $result['status'],
+        ]);
+    }
 
     switch ($method) {
         case 'GET':

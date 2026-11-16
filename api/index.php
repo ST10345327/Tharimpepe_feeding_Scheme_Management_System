@@ -14,6 +14,10 @@ if (empty($endpoint)) {
             'POST /api/login',
             'POST /api/register',
             'POST /api/logout',
+            'POST /api/auth/google/challenge',
+            'POST /api/auth/google/link-challenge',
+            'POST /api/auth/google',
+            'POST /api/auth/google/link',
             'GET /api/beneficiaries',
             'GET /api/beneficiaries/{id}',
             'POST /api/beneficiaries',
@@ -32,6 +36,8 @@ if (empty($endpoint)) {
             'GET /api/dashboard',
             'GET /api/reports',
             'GET /api/users',
+            'POST /api/users/{id}/approve',
+            'POST /api/users/{id}/reject',
             'GET /api/mealsessions',
         ]
     ]);
@@ -51,6 +57,10 @@ if (!in_array($resource, ['login', 'register'], true)) {
 
 try {
     switch ($resource) {
+        case 'auth':
+            require __DIR__ . '/auth.php';
+            handleGoogleAuth($method, $id, $subresource);
+            break;
         case 'login':
             require __DIR__ . '/auth.php';
             handleLogin();
@@ -93,7 +103,7 @@ try {
             break;
         case 'users':
             require __DIR__ . '/users.php';
-            handleUsers($method, $id);
+            handleUsers($method, $id, $subresource);
             break;
         case 'mealsessions':
             require __DIR__ . '/mealsessions.php';

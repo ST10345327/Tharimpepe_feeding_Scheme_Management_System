@@ -36,7 +36,7 @@ try {
     }
 
     // Route: Handle login form submission
-    if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'login') {
+    if (isset($_REQUEST['action']) && in_array($_REQUEST['action'], ['login', 'google_login', 'google_link', 'google_link_challenge'], true)) {
         require_once __DIR__ . '/../app/controllers/AuthController.php';
         exit();
     }

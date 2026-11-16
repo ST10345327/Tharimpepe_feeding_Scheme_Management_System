@@ -21,7 +21,15 @@ class NotificationHelper {
         $notifications = [];
 
         if ($this->role === 'admin') {
-            $s = $this->pdo->query("SELECT COUNT(*) as c FROM Users WHERE Status = 'pending'");
+            $pendingUsersQuery = "SELECT COUNT(*) as c FROM Users WHERE Status = 'pending'";
+            try {
+                $colCheck = $this->pdo->query("SELECT EmailVerifiedAt, SmsVerifiedAt FROM Users LIMIT 1");
+                if ($colCheck !== false) {
+                    $pendingUsersQuery = "SELECT COUNT(*) as c FROM Users WHERE Status = 'pending' AND EmailVerifiedAt IS NOT NULL AND SmsVerifiedAt IS NOT NULL";
+                }
+            } catch (Throwable $e) {
+            }
+            $s = $this->pdo->query($pendingUsersQuery);
             $pendingUsers = (int)$s->fetch()['c'];
             if ($pendingUsers > 0) {
                 $notifications[] = [
@@ -84,7 +92,15 @@ class NotificationHelper {
     }
 
     public function getTotalCount() {
-        $s = $this->pdo->query("SELECT COUNT(*) as c FROM Users WHERE Status = 'pending'");
+        $pendingUsersQuery = "SELECT COUNT(*) as c FROM Users WHERE Status = 'pending'";
+        try {
+            $colCheck = $this->pdo->query("SELECT EmailVerifiedAt, SmsVerifiedAt FROM Users LIMIT 1");
+            if ($colCheck !== false) {
+                $pendingUsersQuery = "SELECT COUNT(*) as c FROM Users WHERE Status = 'pending' AND EmailVerifiedAt IS NOT NULL AND SmsVerifiedAt IS NOT NULL";
+            }
+        } catch (Throwable $e) {
+        }
+        $s = $this->pdo->query($pendingUsersQuery);
         $count = (int)$s->fetch()['c'];
 
         $s = $this->pdo->query("SELECT COUNT(*) as c FROM Donations WHERE DonationDate >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)");
