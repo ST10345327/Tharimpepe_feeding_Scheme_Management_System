@@ -37,7 +37,6 @@
     .login-slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
     .login-carousel::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(9,25,31,.3), transparent 36%, rgba(9,25,31,.64)); }
     .login-carousel-brand, .login-carousel-caption, .login-carousel-controls { position: absolute; z-index: 3; }
-    .login-carousel-brand { position: absolute; z-index: 3; }
     .login-carousel-brand { top: 28px; left: 30px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
     .login-carousel-brand img { width: 54px; height: 42px; padding: 4px; object-fit: contain; border-radius: 9px; background: rgba(255,255,255,.92); }
     .login-carousel-brand strong, .login-carousel-brand span { display: block; }
@@ -667,8 +666,6 @@ const API_BASE = FSMS_API_BASE;
   let current = 0;
   let timer = null;
   let touchStartX = null;
-  let current = 0;
-  let timer = null;
 
   function showSlide(index) {
     current = (index + slides.length) % slides.length;
@@ -710,11 +707,6 @@ const API_BASE = FSMS_API_BASE;
   }, { passive: true });
   document.addEventListener('visibilitychange', start);
   if (reducedMotion.addEventListener) reducedMotion.addEventListener('change', start);
-    if (!document.hidden && slides.length > 1) {
-      timer = window.setInterval(() => showSlide(current + 1), 6000);
-    }
-  }
-  document.addEventListener('visibilitychange', () => start());
   showSlide(0);
   start();
 })();
@@ -817,17 +809,6 @@ async function doLogin() {
     const res = await api('POST', 'login', { username, password });
     if (res.success) {
       await completeLogin(res.data);
-      AUTH_TOKEN = res.data.token;
-      CURRENT_USER = res.data.user;
-      localStorage.setItem('fsms_token', AUTH_TOKEN);
-      localStorage.setItem('fsms_user', JSON.stringify(CURRENT_USER));
-      document.getElementById('drawer-users').style.display = CURRENT_USER.role === 'admin' ? 'flex' : 'none';
-      document.getElementById('login-view').classList.remove('active');
-      document.getElementById('app-view').classList.add('active');
-      document.getElementById('drawer-name').textContent = CURRENT_USER.username;
-      document.getElementById('drawer-role').textContent = CURRENT_USER.role + ' • FSMS';
-      clearLoginCredentials();
-      loadDashboard();
     } else {
       errEl.textContent = res.message;
       errEl.style.display = 'block';
@@ -852,16 +833,6 @@ async function doLogout() {
     await window.FsmsGoogleAuth.clearToken().catch(() => {});
     AUTH_TOKEN = '';
     CURRENT_USER = null;
-  try {
-    if (AUTH_TOKEN) await api('POST', 'logout');
-  } catch (e) {
-    // Always clear local credentials, even if the server cannot be reached.
-  } finally {
-    localStorage.removeItem('fsms_token');
-    localStorage.removeItem('fsms_user');
-    AUTH_TOKEN = '';
-    CURRENT_USER = null;
-    clearLoginCredentials();
     document.getElementById('app-view').classList.remove('active');
     document.getElementById('login-view').classList.add('active');
     toggleDrawer();
@@ -1121,8 +1092,6 @@ async function doRegister() {
         `Email: ${delivery.email || 'not sent'}; SMS: ${delivery.sms || 'not sent'}. ` +
         'Use the resend buttons if delivery failed. Admin approval follows verification.';
       toast('Account created. Verify your email and phone to continue.', 'success');
-      toast('Account created! Your registration is pending admin approval. You will be able to log in once approved.', 'success');
-      closeRegisterModal();
     } else {
       errEl.textContent = res.message;
       errEl.style.display = 'block';

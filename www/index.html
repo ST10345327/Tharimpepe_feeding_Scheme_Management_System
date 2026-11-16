@@ -36,7 +36,7 @@
     .login-slide.is-active { opacity: 1; visibility: visible; z-index: 1; transition-delay: 0s; }
     .login-slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
     .login-carousel::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(9,25,31,.3), transparent 36%, rgba(9,25,31,.64)); }
-    .login-carousel-brand { position: absolute; z-index: 3; }
+    .login-carousel-brand, .login-carousel-caption, .login-carousel-controls { position: absolute; z-index: 3; }
     .login-carousel-brand { top: 28px; left: 30px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
     .login-carousel-brand img { width: 54px; height: 42px; padding: 4px; object-fit: contain; border-radius: 9px; background: rgba(255,255,255,.92); }
     .login-carousel-brand strong, .login-carousel-brand span { display: block; }
@@ -78,6 +78,10 @@
       .login-center { flex: 1 0 auto; width: 100%; padding: 18px 20px 24px; overflow: visible; }
       .login-content { max-width: 420px; }
       .login-carousel-brand { top: 18px; left: 20px; }
+      .login-carousel-caption { left: 20px; bottom: 64px; max-width: 82%; }
+      .login-carousel-caption h1 { font-size: 23px; }
+      .login-carousel-caption p { font-size: 13px; }
+      .login-carousel-controls { left: 20px; bottom: 17px; }
     }
     .drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; backdrop-filter: blur(2px); }
     .drawer { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: var(--white); z-index: 2001; transition: 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
@@ -219,6 +223,19 @@
     <div class="login-carousel-brand" aria-hidden="true">
       <img src="img/icon.png" alt="">
       <div><strong>Tharimpepe</strong><span>Feeding Scheme</span></div>
+    </div>
+    <div class="login-carousel-caption" aria-live="polite" aria-atomic="true">
+      <h1 data-slide-title>Our community, growing together</h1>
+      <p data-slide-copy>Working together to make every meal count.</p>
+    </div>
+    <div class="login-carousel-controls">
+      <button class="login-carousel-arrow" type="button" data-carousel-prev aria-label="Previous image">&#8249;</button>
+      <div class="login-carousel-dots" role="group" aria-label="Choose a community story">
+        <button class="login-carousel-dot" type="button" aria-label="Show community story 1" aria-current="true" data-carousel-dot="0"></button>
+        <button class="login-carousel-dot" type="button" aria-label="Show community story 2" aria-current="false" data-carousel-dot="1"></button>
+        <button class="login-carousel-dot" type="button" aria-label="Show community story 3" aria-current="false" data-carousel-dot="2"></button>
+      </div>
+      <button class="login-carousel-arrow" type="button" data-carousel-next aria-label="Next image">&#8250;</button>
     </div>
   </section>
   <div class="login-center">
@@ -637,8 +654,18 @@ const API_BASE = FSMS_API_BASE;
   if (!carousel) return;
 
   const slides = Array.from(carousel.querySelectorAll('[data-slide]'));
+  const dots = Array.from(carousel.querySelectorAll('[data-carousel-dot]'));
+  const title = carousel.querySelector('[data-slide-title]');
+  const copy = carousel.querySelector('[data-slide-copy]');
+  const captions = [
+    ['Our community, growing together', 'Working together to make every meal count.'],
+    ['Nourishment for brighter days', 'Fresh ingredients help us serve balanced meals.'],
+    ['Many hands, one caring community', 'Volunteers make the feeding scheme possible.']
+  ];
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let current = 0;
   let timer = null;
+  let touchStartX = null;
 
   function showSlide(index) {
     current = (index + slides.length) % slides.length;
@@ -647,6 +674,9 @@ const API_BASE = FSMS_API_BASE;
       slide.classList.toggle('is-active', active);
       slide.setAttribute('aria-hidden', String(!active));
     });
+    dots.forEach((dot, i) => dot.setAttribute('aria-current', String(i === current)));
+    title.textContent = captions[current][0];
+    copy.textContent = captions[current][1];
   }
 
   function stop() {
@@ -656,11 +686,27 @@ const API_BASE = FSMS_API_BASE;
 
   function start() {
     stop();
-    if (!document.hidden && slides.length > 1) {
+    if (!reducedMotion.matches && !document.hidden && slides.length > 1) {
       timer = window.setInterval(() => showSlide(current + 1), 6000);
     }
   }
-  document.addEventListener('visibilitychange', () => start());
+
+  carousel.querySelector('[data-carousel-prev]').addEventListener('click', () => { showSlide(current - 1); start(); });
+  carousel.querySelector('[data-carousel-next]').addEventListener('click', () => { showSlide(current + 1); start(); });
+  dots.forEach((dot) => dot.addEventListener('click', () => { showSlide(Number(dot.dataset.carouselDot)); start(); }));
+  carousel.addEventListener('mouseenter', stop);
+  carousel.addEventListener('mouseleave', start);
+  carousel.addEventListener('focusin', stop);
+  carousel.addEventListener('focusout', (event) => { if (!carousel.contains(event.relatedTarget)) start(); });
+  carousel.addEventListener('touchstart', (event) => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
+  carousel.addEventListener('touchend', (event) => {
+    if (touchStartX === null) return;
+    const delta = event.changedTouches[0].clientX - touchStartX;
+    touchStartX = null;
+    if (Math.abs(delta) > 45) { showSlide(current + (delta < 0 ? 1 : -1)); start(); }
+  }, { passive: true });
+  document.addEventListener('visibilitychange', start);
+  if (reducedMotion.addEventListener) reducedMotion.addEventListener('change', start);
   showSlide(0);
   start();
 })();
@@ -763,17 +809,6 @@ async function doLogin() {
     const res = await api('POST', 'login', { username, password });
     if (res.success) {
       await completeLogin(res.data);
-      AUTH_TOKEN = res.data.token;
-      CURRENT_USER = res.data.user;
-      localStorage.setItem('fsms_token', AUTH_TOKEN);
-      localStorage.setItem('fsms_user', JSON.stringify(CURRENT_USER));
-      document.getElementById('drawer-users').style.display = CURRENT_USER.role === 'admin' ? 'flex' : 'none';
-      document.getElementById('login-view').classList.remove('active');
-      document.getElementById('app-view').classList.add('active');
-      document.getElementById('drawer-name').textContent = CURRENT_USER.username;
-      document.getElementById('drawer-role').textContent = CURRENT_USER.role + ' • FSMS';
-      clearLoginCredentials();
-      loadDashboard();
     } else {
       errEl.textContent = res.message;
       errEl.style.display = 'block';
@@ -798,16 +833,6 @@ async function doLogout() {
     await window.FsmsGoogleAuth.clearToken().catch(() => {});
     AUTH_TOKEN = '';
     CURRENT_USER = null;
-  try {
-    if (AUTH_TOKEN) await api('POST', 'logout');
-  } catch (e) {
-    // Always clear local credentials, even if the server cannot be reached.
-  } finally {
-    localStorage.removeItem('fsms_token');
-    localStorage.removeItem('fsms_user');
-    AUTH_TOKEN = '';
-    CURRENT_USER = null;
-    clearLoginCredentials();
     document.getElementById('app-view').classList.remove('active');
     document.getElementById('login-view').classList.add('active');
     toggleDrawer();
