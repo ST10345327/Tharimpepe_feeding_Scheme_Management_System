@@ -69,6 +69,9 @@ class GoogleIdentityService
             !is_string($expectedNonce) || !preg_match('/^[a-f0-9]{64}$/', $expectedNonce)) {
             throw new InvalidArgumentException('Invalid Google credential.');
         }
+        if (substr_count($idToken, '.') !== 2) {
+            throw new InvalidArgumentException('Invalid Google credential.');
+        }
 
         $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
         if (!is_file($autoload)) {
