@@ -29,17 +29,6 @@ function isHttpsTransport($server = null, $trustedProxies = null)
 function isLoopbackProxyAddress($address)
 {
     return $address === '127.0.0.1' || $address === '::1';
-function isHttpsTransport()
-{
-    $https = strtolower((string)($_SERVER['HTTPS'] ?? ''));
-    $isSecure = $https !== '' && $https !== 'off';
-    $trustedProxies = array_filter(array_map('trim', explode(',', getenv('FSMS_TRUSTED_PROXIES') ?: '')));
-    $remoteAddress = (string)($_SERVER['REMOTE_ADDR'] ?? '');
-    if ($remoteAddress !== '' && in_array($remoteAddress, $trustedProxies, true)
-        && strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https') {
-        $isSecure = true;
-    }
-    return $isSecure;
 }
 
 /** Enforce HTTPS before application pages can process credentials or session data. */
@@ -53,9 +42,10 @@ function requireHttpsTransport($jsonResponse = false)
     $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
     $isLoopback = preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/', $host) === 1;
     $remoteAddress = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+    $allowHttpLocal = getenv('FSMS_ALLOW_HTTP_LOCAL') === '1';
     if (isHttpsTransport() ||
-        ($isLoopback && isLoopbackProxyAddress($remoteAddress) && getenv('FSMS_ALLOW_HTTP_LOCAL') === '1')) {
-    if (isHttpsTransport() || ($isLoopback && getenv('FSMS_ALLOW_HTTP_LOCAL') === '1')) {
+        ($allowHttpLocal && $isLoopback && isLoopbackProxyAddress($remoteAddress)) ||
+        ($allowHttpLocal && preg_match('/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01]))\./', $remoteAddress) === 1)) {
         return;
     }
 
