@@ -42,8 +42,10 @@ function requireHttpsTransport($jsonResponse = false)
     $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
     $isLoopback = preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/', $host) === 1;
     $remoteAddress = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+    $allowHttpLocal = getenv('FSMS_ALLOW_HTTP_LOCAL') === '1';
     if (isHttpsTransport() ||
-        ($isLoopback && isLoopbackProxyAddress($remoteAddress) && getenv('FSMS_ALLOW_HTTP_LOCAL') === '1')) {
+        ($allowHttpLocal && $isLoopback && isLoopbackProxyAddress($remoteAddress)) ||
+        ($allowHttpLocal && preg_match('/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01]))\./', $remoteAddress) === 1)) {
         return;
     }
 
